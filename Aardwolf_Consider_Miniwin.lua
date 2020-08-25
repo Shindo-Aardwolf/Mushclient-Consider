@@ -1,5 +1,5 @@
 dofile (GetPluginInfo(GetPluginID(), 20).. "aardwolf_colors.lua")
-dofile (GetPluginInfo (GetPluginID(), 20)..  "Name_Cleanup.lua")
+dofile (GetPluginInfo (GetPluginID(), 20).. "Name_Cleanup.lua")
 
 -- Options -----------------------------------------------
 local BACKGROUND_COLOUR		= ColourNameToRGB "black"
@@ -215,12 +215,12 @@ function process_flags (flags)
 	newflags = ''
 	if string.find(flags,"%(W%)") then
 		newflags = newflags.. "@x015(W)"
-	elseif string.find(flags,"%(R%)") then
-		newflags = newflags.. "@x001(R)"
 	else
 		newflags = newflags.. "   "
 	end
-	if string.find(flags,"%(G%)") then
+	if string.find(flags,"%(R%)") then
+		newflags = newflags.. "@x001(R)"
+	elseif string.find(flags,"%(G%)") then
 		newflags = newflags.. "@x003(G)"
 	else
 		newflags = newflags.. "   "
@@ -295,7 +295,7 @@ function Show_Window ()
 	-- get width and height and draw the window
 	if #targT > 0 then
 		for i,v in ipairs (targT) do
-			window_width = math.max ((WindowTextWidth (win, font_id, tostring(i).. ". ".. strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), banner_width, window_width)
+			window_width = math.max((WindowTextWidth (win, font_id, tostring(i).. ". ".. strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), banner_width, window_width)
 		end
 	else
 		window_width = banner_width
@@ -320,7 +320,7 @@ function Show_Window ()
 		sLine = tostring(i).. ". ".. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
 		right   = WindowTextWidth (win, font_id, strip_colours(sLine)) + left
 		Theme.WindowTextFromStyles(win, font_id, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
-		sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " "..  v.keyword.. "'"
+		sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. v.keyword.. "'"
 		WindowAddHotspot (win, v.keyword.. ":".. tostring (i), left, top, right, bottom,
 		"", -- MouseOver
 		"", -- CancelMouseOver
