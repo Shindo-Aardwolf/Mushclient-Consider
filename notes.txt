@@ -1,0 +1,50 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+From    : Veritheia: consider feedback for VI
+Forum   : Personal - #292188
+To      : shindo
+Date    : Mon Aug 24 12:58:51 2020
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+| Overall consensus seems to be that the VI package could do with a lot of
+| updating in general. There may be better options for output for VI players at
+| the moment but the thought is that one day, the VI package would be updated and
+| that would make whatever VI-specific output you did now broken, so I think the
+| best route is to just use something like tprint, which obviously they can work
+| with. And yeah, output to main window - no miniwins for VI.
+| 
+| Some feature requests I gathered:
+| Strip punctuation, mainly the ( ). +/- needs to stay but on that note..
+| Shorten level range to the average, not the whole range. So +5 instead of +3 to
+| +8. Just less spammy.
+| Make good/evil and levels toggles with options for display at: beginning, end,
+| or totally off. I know you have the on/off right now.
+| Strip other flags, except (W). Things like (T) and (I) probably aren't
+| important.. but maybe make this a toggle as well?
+| 
+| I figure given there's only so many flags, you can capture it all with regex
+| and so that should make it pretty easy to work with.
+| 
+| A couple other features that'd be nice:
+| A consider quick option that removes mob names
+| A consider super quick option that only says how many mobs in the room
+| 
+| Like, if you're in an area where you maybe care about align but just want to
+| kill, you don't need the mobname.. or if you're in an area like ocean park then
+| maybe you just care how many are in the room.
+| 
+| Finally not VI-related (obviously) - I'd like to have (R) and (G) give some
+| highlight (i.e. different background color) in the miniwin to make it easier
+| to pick out good/evil(/neutral mobs).
+| 
+| Areia offered to talk to you if you have some questions about VI-specific stuff
+| Eroe was a little annoyed that I was acting as a middle-man but seemed willing
+| to talk to you directly if you wanted to ask him. He already has his own little
+| plugin and does quite a bit of coding afaik. He's a nice guy though so don't be
+| afraid to reach out if you want to. Especially if you're putting in effort just
+| for the sake of the VI community, I'm sure he'd be more than happy to help in
+| some way.
+| 
+| Anyway I know you're busy so you know, prioritize your life the right way :)
+| 
+| Regardless, appreciate it all. You're a rock star. Thanks!
+|
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
