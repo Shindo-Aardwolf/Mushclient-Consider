@@ -1,5 +1,5 @@
-dofile (GetPluginInfo(GetPluginID(), 20) .. "aardwolf_colors.lua")
-dofile (GetPluginInfo (GetPluginID(), 20) ..  "Name_Cleanup.lua")
+dofile (GetPluginInfo(GetPluginID(), 20).. "aardwolf_colors.lua")
+dofile (GetPluginInfo (GetPluginID(), 20)..  "Name_Cleanup.lua")
 
 -- Options -----------------------------------------------
 local BACKGROUND_COLOUR		= ColourNameToRGB "black"
@@ -18,6 +18,24 @@ local ECHO_CONSIDER		= false -- show consider in command window
 local SHOW_NO_MOB		= false -- show warning when considering an empty room
 local SHOW_FLAGS		= true
 
+local colour_to_ansi = {
+	["chartreuse"] = "@x154",
+	["darkviolet"] = "@x052",
+	["springgreen"] = "@x010",
+	["darkgoldenrod"] = "@x003",
+	["darkgreen"] = "@x002",
+	["lightpink"] = "@x182",
+	["darkmagenta"] = "@x005",
+	["tomato"] = "@x167",
+	["crimson"] = "@x125",
+	["forestgreen"] = "@x078",
+	["magenta"] = "@x013",
+	["gray"] = "@x008",
+	["gold"] = "@x011",
+	["white"] = "@x015",
+	["silver"] = "@x007",
+}
+
 require "aard_register_z_on_create"
 require "mw_theme_base"
 require "movewindow"
@@ -35,7 +53,7 @@ function keyword_change (name, line, wildcards)
 	end
 	keyword_position = GetVariable ("keyword_position")
 
-	ColourTell ("white", "blue", "Keywords will now be taken from the " .. keyword_position .. " of Mobile names. ")
+	ColourTell ("white", "blue", "Keywords will now be taken from the ".. keyword_position.. " of Mobile names. ")
 	ColourNote ("", "black", " ")
 
 end -- keyword_position
@@ -66,7 +84,7 @@ function conw (name, line, wildcards)
 		}
 		for i,v in ipairs (a) do
 			sSpa = string.rep (" ", 20 - v:sub(1,v:find("-") - 1):len() )
-			ColourTell ("yellow", GetInfo(271), v:sub(1,v:find("-") - 1) .. sSpa )
+			ColourTell ("yellow", GetInfo(271), v:sub(1,v:find("-") - 1).. sSpa )
 			ColourNote ("white", GetInfo(271), v:sub(v:find("-"), v:len() ))
 		end
 		return
@@ -119,7 +137,7 @@ function conw (name, line, wildcards)
 	if wildcards[1] and wildcards[1]:match ("^%w+$") then
 		SetVariable ("default_command", wildcards[1])
 		default_command = GetVariable ("default_command")
-		ColourTell ("white", "blue", "Default command: " .. wildcards[1])
+		ColourTell ("white", "blue", "Default command: ".. wildcards[1])
 		ColourNote ("", "black", " ")
 	end
 
@@ -147,8 +165,8 @@ function execute_command (id, s)
 	end
 
 	s = s:match ("^([%d.%w' ]+)%:%d+$")
-	Execute (default_command .. " " .. s)
-	ColourTell ("white", "blue", default_command .. " " .. s)
+	Execute (default_command.. " ".. s)
+	ColourTell ("white", "blue", default_command.. " ".. s)
 	ColourNote ("", "black", " ")
 
 end -- execute_command
@@ -167,8 +185,8 @@ function command_line (name, line, wildcards)
 	end
 
 	if targT[iNum] then
-		Execute (sKey .. " " .. targT[iNum].keyword)
-		ColourTell ("white", "blue", sKey .. " " .. targT[iNum].keyword .. " ")
+		Execute (sKey.. " ".. targT[iNum].keyword)
+		ColourTell ("white", "blue", sKey.. " ".. targT[iNum].keyword.. " ")
 		ColourNote ("", "black", " ")
 	else
 		ColourTell ("white", "blue", "no target in targT ")
@@ -193,10 +211,28 @@ function getKeyword(mob)
 	return mob
 end
 
+function process_flags (flags)
+	newflags = ''
+	if string.find(flags,"%(W%)") then
+		newflags = newflags.. "@x015(W)"
+	elseif string.find(flags,"%(R%)") then
+		newflags = newflags.. "@x001(R)"
+	else
+		newflags = newflags.. "   "
+	end
+	if string.find(flags,"%(G%)") then
+		newflags = newflags.. "@x003(G)"
+	else
+		newflags = newflags.. "   "
+	end
+
+	return newflags
+end
+
 function adapt_consider (name, line, wildcards)
 	flags = nil
-	if SHOW_FLAGS then
-		flags = wildcards[1] -- we want to be able to show the flags to the user - Shindo
+	if SHOW_FLAGS then-- we want to be able to show the flags to the user - Shindo
+		flags = process_flags(wildcards[1]) 
 	else
 		flags = ""
 	end
@@ -211,11 +247,13 @@ function adapt_consider (name, line, wildcards)
 			mflags  = flags,
 			line    = line,
 			colour  = mob_color,
-			range   = "(" .. mob_range .. ")",
+			range   = "(".. mob_range.. ")",
 			message = line
 		} -- Changed to use color, range set by triggers - Kobus
 		if ECHO_CONSIDER then
-			ColourNote (mob_color, "", line .. " (" .. mob_range .. ")" )
+			--ColourTell   --build the string in parts
+
+			ColourNote (mob_color, "", line.. " (".. mob_range.. ")" )
 			-- Changed to use color, range set by triggers - Kobus
 		end
 		table.insert (targT, t)
@@ -223,7 +261,7 @@ function adapt_consider (name, line, wildcards)
 
 
 	if not mob and SHOW_NO_MOB then
-		ColourTell ("white", "blue", "Could not find anything: " .. line)
+		ColourTell ("white", "blue", "Could not find anything: ".. line)
 		ColourNote ("", "black", " ")
 	end -- not  found in table
 
@@ -257,7 +295,7 @@ function Show_Window ()
 	-- get width and height and draw the window
 	if #targT > 0 then
 		for i,v in ipairs (targT) do
-			window_width = math.max ((WindowTextWidth (win, font_id, tostring (i) .. ". " .. v.mflags .. v.name .. " " .. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), banner_width, window_width)
+			window_width = math.max ((WindowTextWidth (win, font_id, tostring(i).. ". ".. strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), banner_width, window_width)
 		end
 	else
 		window_width = banner_width
@@ -279,11 +317,11 @@ function Show_Window ()
 	bottom  = top + font_height
 
 	for i,v in ipairs (targT) do
-		sLine = tostring (i) .. ". " .. v.mflags .. v.name .. " " .. v.range
-		right   = WindowTextWidth (win, font_id, sLine) + left
-		WindowText (win, font_id, sLine, left, top, right, bottom, ColourNameToRGB (v.colour))
-		sBalloon = v.line .. " " .. v.range .. "\n\n" .. "Click to Execute: '" .. default_command .. " " ..  v.keyword .. "'"
-		WindowAddHotspot (win, v.keyword .. ":" .. tostring (i), left, top, right, bottom,
+		sLine = tostring(i).. ". ".. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
+		right   = WindowTextWidth (win, font_id, strip_colours(sLine)) + left
+		Theme.WindowTextFromStyles(win, font_id, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
+		sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " "..  v.keyword.. "'"
+		WindowAddHotspot (win, v.keyword.. ":".. tostring (i), left, top, right, bottom,
 		"", -- MouseOver
 		"", -- CancelMouseOver
 		"", -- MouseDown
@@ -293,7 +331,7 @@ function Show_Window ()
 		1, -- Cursor
 		0) --  Flag
 		top     = bottom + LINE_SPACING
-		bottom  = top + font_height
+		bottom  = top + font_height  --]]
 	end
 
 	--draw the title
@@ -360,7 +398,7 @@ function OnPluginInstall ()
 		Note("For a list of commands type 'conw ?'")
 	end
 
-	win = WIN_STACK .. GetPluginID ()
+	win = WIN_STACK.. GetPluginID ()
 
 	local fonts = utils.getfontfamilies ()
 	if fonts[FONT_NAME] then
@@ -401,7 +439,7 @@ function OnPluginInstall ()
 	EnableTriggerGroup ("auto_consider", auto_conw)
 
 	if GetVariable ("enabled") == "false" then
-		ColourNote ("yellow", "", "Warning: Plugin " .. GetPluginName ().. " is currently disabled.")
+		ColourNote ("yellow", "", "Warning: Plugin ".. GetPluginName ().. " is currently disabled.")
 		check (EnablePlugin(GetPluginID (), false))
 		return
 	end -- they didn't enable us last time
@@ -412,7 +450,7 @@ end -- OnPluginInstall
 
 function OnPluginEnable ()
 
-	title_width = WindowTextWidth (win, font_id, TITLE .. " (" .. default_command .. ")" .. " - OFF")
+	title_width = WindowTextWidth (win, font_id, TITLE.. " (".. default_command.. ")".. " - OFF")
 	banner_width = title_width + BORDER_WIDTH * 2 + TEXT_OFFSET * 2
 	Show_Banner ()
 
