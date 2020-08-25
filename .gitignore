@@ -39,3 +39,6 @@ luac.out
 *.x86_64
 *.hex
 
+#swap and vim backup files
+*.swp
+*~
