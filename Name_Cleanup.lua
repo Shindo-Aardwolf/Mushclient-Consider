@@ -1,8 +1,13 @@
 function stripname(nametostrip, CurrentZone)
+	-- this is to set the zone if we didn't already
+	if CurrentZone == nil then
+		CurrentZone = gmcp("room.info.zone")
+	end
+
 	--dirty_string = dirty_string:gsub("", "")
 
 	local dirty_string = nametostrip
-	if CurrentZone == "The Flying Citadel" then
+	if CurrentZone == "citadel" then
 		dirty_string = dirty_string:gsub(" prince of .*", "")
 		dirty_string = dirty_string:gsub(" princess of .*", "")
 		dirty_string = dirty_string:gsub(" archangel of .*", "")

@@ -39,6 +39,8 @@ local colour_to_ansi = {
 require "aard_register_z_on_create"
 require "mw_theme_base"
 require "movewindow"
+require "gmcphelper"
+
 mob_color = "gray" -- Color set by the triggers - Kobus
 mob_range = "0 to 0" -- Range set by the triggers - Kobus
 
