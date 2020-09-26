@@ -45,7 +45,6 @@ mob_color = "gray" -- Color set by the triggers - Kobus
 mob_range = "0 to 0" -- Range set by the triggers - Kobus
 
 local search_destroy_id = "e50b1d08a0cfc0ee9c442001"
-local showDebug = 0
 
 targT = {}
 
@@ -213,9 +212,13 @@ function getKeyword(mob)
 		end
 	end
 
-	--mob = stripname(mob)
-	local gmcproomdata = gmcp("room")
-	mob = remote_guess_mob_name(mob, gmcproomdata.info.zone)
+	if (GetPluginInfo(search_destroy_id, 17)) then
+		gmcproomdata = gmcp("room")
+		_, mob, _ = CallPlugin( search_destroy_id, "IGuessMobNameBroadcast", mob, gmcproomdata.info.zone) 
+	else
+		mob = stripname(mob)
+	end
+
 	if nameCount > 1 then
 		mob = string.format("%s.%s", tostring(nameCount), mob)
 	end
