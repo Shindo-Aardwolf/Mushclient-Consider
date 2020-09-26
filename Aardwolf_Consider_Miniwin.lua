@@ -128,11 +128,6 @@ function conw (name, line, wildcards)
 		return
 	end
 
-	if wildcards[1] == "debug" then
-		conw_debug()
-		return
-	end
-
 	if wildcards[1] == "chng" then
 		keyword_change ()
 		return
@@ -484,43 +479,4 @@ function OnPluginSaveState ()
 	movewindow.save_state (win)
 
 end -- OnPluginSaveState
-
------------ EXTERNAL CALLOUTS -----------------------------
-
-function remote_guess_mob_name(mobName, areaId, broadcast)
-
-	DebugNote("remote_guess_mob_name call:" .. mobName .. ":" .. areaId)
-
-	local rc, mobGuess, subMob = CallPlugin(
-	search_destroy_id,
-	"IGuessMobNameBroadcast",
-	mobName,
-	areaId)
-
-	if (subMob ~= nil) then
-		DebugNote(subMob)
-	end
-
-	DebugNote("remote_guess_mob_name return:" .. mobGuess)
-	return mobGuess
-end
-
-------------- DEBUGGING ---------------
-
-function DebugNote(text)
-	if (showDebug == 1) then
-		--DoAfterSpecial(".1", "Note(\"S&D ~ " .. string.gsub(text, "\"", "\")") .. "\")", sendto.script)
-		Note("S&D ~ " .. text)
-	end
-end
-
-function conw_debug(name, line, wildcards)
-	if (showDebug == 0) then
-		showDebug = 1
-	else
-		showDebug = 0
-	end
-	Note("conw debug:" .. showDebug)
-end
-
 
