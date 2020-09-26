@@ -19,19 +19,19 @@ local SHOW_NO_MOB		= false -- show warning when considering an empty room
 local SHOW_FLAGS		= true
 
 local colour_to_ansi = {
-	["chartreuse"] = "@x154",
-	["darkviolet"] = "@x052",
-	["springgreen"] = "@x010",
-	["darkgoldenrod"] = "@x003",
-	["darkgreen"] = "@x002",
-	["lightpink"] = "@x182",
-	["darkmagenta"] = "@x005",
-	["tomato"] = "@x167",
+	["chartreuse"] = "@x118",
+	["darkviolet"] = "@x128",
+	["springgreen"] = "@x048",
+	["darkgoldenrod"] = "@x136",
+	["darkgreen"] = "@x022",
+	["lightpink"] = "@x217",
+	["darkmagenta"] = "@x090",
+	["tomato"] = "@x203",
 	["crimson"] = "@x125",
 	["forestgreen"] = "@x078",
-	["magenta"] = "@x013",
+	["magenta"] = "@x201",
 	["gray"] = "@x008",
-	["gold"] = "@x011",
+	["gold"] = "@x220",
 	["white"] = "@x015",
 	["silver"] = "@x007",
 }
@@ -43,6 +43,9 @@ require "gmcphelper"
 
 mob_color = "gray" -- Color set by the triggers - Kobus
 mob_range = "0 to 0" -- Range set by the triggers - Kobus
+
+local search_destroy_id = "e50b1d08a0cfc0ee9c442001"
+local showDebug = 0
 
 targT = {}
 
@@ -126,6 +129,11 @@ function conw (name, line, wildcards)
 		return
 	end
 
+	if wildcards[1] == "debug" then
+		conw_debug()
+		return
+	end
+
 	if wildcards[1] == "chng" then
 		keyword_change ()
 		return
@@ -205,7 +213,9 @@ function getKeyword(mob)
 		end
 	end
 
-	mob = stripname(mob)
+	--mob = stripname(mob)
+	local gmcproomdata = gmcp("room")
+	mob = remote_guess_mob_name(mob, gmcproomdata.info.zone)
 	if nameCount > 1 then
 		mob = string.format("%s.%s", tostring(nameCount), mob)
 	end
@@ -471,5 +481,43 @@ function OnPluginSaveState ()
 	movewindow.save_state (win)
 
 end -- OnPluginSaveState
+
+----------- EXTERNAL CALLOUTS -----------------------------
+
+function remote_guess_mob_name(mobName, areaId, broadcast)
+
+	DebugNote("remote_guess_mob_name call:" .. mobName .. ":" .. areaId)
+
+	local rc, mobGuess, subMob = CallPlugin(
+	search_destroy_id,
+	"IGuessMobNameBroadcast",
+	mobName,
+	areaId)
+
+	if (subMob ~= nil) then
+		DebugNote(subMob)
+	end
+
+	DebugNote("remote_guess_mob_name return:" .. mobGuess)
+	return mobGuess
+end
+
+------------- DEBUGGING ---------------
+
+function DebugNote(text)
+	if (showDebug == 1) then
+		--DoAfterSpecial(".1", "Note(\"S&D ~ " .. string.gsub(text, "\"", "\")") .. "\")", sendto.script)
+		Note("S&D ~ " .. text)
+	end
+end
+
+function conw_debug(name, line, wildcards)
+	if (showDebug == 0) then
+		showDebug = 1
+	else
+		showDebug = 0
+	end
+	Note("conw debug:" .. showDebug)
+end
 
 
