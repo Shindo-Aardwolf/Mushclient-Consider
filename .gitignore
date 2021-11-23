@@ -42,3 +42,6 @@ luac.out
 #swap and vim backup files
 *.swp
 *~
+
+.vscode/
+Aardwolf_Consider_Miniwin_Veritheia.lua
