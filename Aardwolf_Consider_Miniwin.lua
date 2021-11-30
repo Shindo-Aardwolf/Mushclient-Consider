@@ -138,18 +138,18 @@ function Conw (name, line, wildcards)
 	end
 
 	if wildcards[1] == "auto" then
-		if tonumber (GetVariable ("conw_on")) == 1 then
-			SetVariable ("conw_on", 0)
+		if conw_on == 1 then
+			conw_on = 0
 			EnableTriggerGroup ("auto_consider_on_entry", 0)
 			EnableTriggerGroup ("auto_consider_on_kill", 0)
 			EnableTriggerGroup ("auto_consider_misc", 0)
 			ColourTell ("white", "blue", "Auto consider off.")
 			ColourNote ("", "black", " ")
 		else
-			SetVariable ("conw_on", 1)
-			EnableTriggerGroup ("auto_consider_on_entry", GetVariable("conw_entry"))
-			EnableTriggerGroup ("auto_consider_on_kill", GetVariable("conw_kill"))
-			EnableTriggerGroup ("auto_consider_misc", GetVariable("conw_misc"))
+			conw_on = 1
+			EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
+			EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
+			EnableTriggerGroup ("auto_consider_misc", conw_misc)
 			ColourTell ("white", "blue", "Auto consider on.")
 			ColourNote ("", "black", " ")
 		end
@@ -158,7 +158,7 @@ function Conw (name, line, wildcards)
 	end
 
 	if wildcards[1] == "off" then
-		SetVariable ("conw_on", 0)
+		conw_on = 0
 		EnableTriggerGroup ("auto_consider_on_kill", 0)
 		EnableTriggerGroup ("auto_consider_on_entry", 0)
 		EnableTriggerGroup ("auto_consider_misc", 0)
@@ -169,10 +169,10 @@ function Conw (name, line, wildcards)
 	end
 
 	if wildcards[1] == "on" then
-		SetVariable ("conw_on", 1)
-		EnableTriggerGroup ("auto_consider_on_entry", GetVariable("conw_entry"))
-		EnableTriggerGroup ("auto_consider_on_kill", GetVariable("conw_kill"))
-		EnableTriggerGroup ("auto_consider_misc", GetVariable("conw_misc"))
+		conw_on = 1
+		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
+		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
+		EnableTriggerGroup ("auto_consider_misc", conw_misc)
 		ColourTell ("white", "blue", "Auto consider on.")
 		ColourNote ("", "black", " ")
 		Show_Window()
@@ -180,29 +180,44 @@ function Conw (name, line, wildcards)
 	end
 
 	if wildcards[1] == "kill" then
-		if tonumber(GetVariable("conw_kill")) == 1 then
-			SetVariable("conw_kill",0)
+		if conw_kill == 1 then
+			conw_kill = 0
+			ColourTell ("white", "blue", "Consider on kill - OFF.")
+			ColourNote ("", "black", " ")
 		else
-			SetVariable("conw_kill",1)
+			conw_kill = 1
+			ColourTell ("white", "blue", "Consider on kill - ON.")
+			ColourNote ("", "black", " ")
 		end
+		EnableTriggerGroup("auto_consider_on_kill", conw_kill)
 		return
 	end
 
 	if wildcards[1] == "entry" then
-		if tonumber(GetVariable("conw_entry")) == 1 then
-			SetVariable("conw_entry",0)
+		if conw_entry == 1 then
+			conw_entry = 0
+			ColourTell ("white", "blue", "Consider on entry - OFF.")
+			ColourNote ("", "black", " ")
 		else
-			SetVariable("conw_entry",1)
+			conw_entry = 1
+			ColourTell ("white", "blue", "Consider on entry - ON.")
+			ColourNote ("", "black", " ")
 		end
+		EnableTriggerGroup("auto_consider_on_entry", conw_entry)
 		return
 	end
 
 	if wildcards[1] == "misc" then
-		if tonumber(GetVariable("conw_misc")) == 1 then
-			SetVariable("conw_misc",0)
+		if conw_misc == 1 then
+			conw_misc = 0
+			ColourTell ("white", "blue", "Consider on misc - OFF.")
+			ColourNote ("", "black", " ")
 		else
-			SetVariable("conw_misc",1)
+			conw_misc = 1
+			ColourTell ("white", "blue", "Consider on misc - ON.")
+			ColourNote ("", "black", " ")
 		end
+		EnableTriggerGroup("auto_consider_misc", conw_misc)
 		return
 	end
 
@@ -222,7 +237,6 @@ function Conw (name, line, wildcards)
 		ColourTell ("white", "blue", "Default command: ".. wildcards[1])
 		ColourNote ("", "black", " ")
 	end
-
 
 end -- Send_consider
 
@@ -358,6 +372,9 @@ end -- Adapt_consider
 function Draw_Title ()
 	local consider_status = ""
 	local title_text = ""
+	local entrycheck = {"@RE", "@GE"}
+	local killcheck = {"@RK", "@GK"}
+	local misccheck = {"@RM@W", "@GM@W"}
 
 	--draw the title and add drag hotspot
 	local top     = BORDER_WIDTH + LINE_SPACING
@@ -366,8 +383,8 @@ function Draw_Title ()
 	local right   = WindowInfo (Win, 3)
 
 	movewindow.add_drag_handler (Win, 0, top, right, bottom, 1)
-	if (tonumber(GetVariable("conw_on"))==1) then
-		consider_status = "@GON@W" 
+	if (conw_on==1) then
+		consider_status = "@GON@W "..entrycheck[conw_entry+1]..killcheck[conw_kill+1]..misccheck[conw_misc+1] 
 	else 
 		consider_status = "@ROFF@W" 
 	end
@@ -571,10 +588,6 @@ function OnPluginSaveState ()
 
 	SetVariable ("enabled", tostring (GetPluginInfo (GetPluginID (), 17)))
 	SetVariable ("doing_consider", "false")
---	SetVariable("conw_misc", 1)
---	SetVariable("conw_kill", 1)
---	SetVariable("conw_entry", 1)
---	SetVariable("conw_on", 1)
 	SetVariable("conw_misc", conw_misc)
 	SetVariable("conw_kill", conw_kill)
 	SetVariable("conw_entry", conw_entry)
