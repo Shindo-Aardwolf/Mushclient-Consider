@@ -117,17 +117,17 @@ end -- toggle_flags
 function Conw (name, line, wildcards)
 
 	--show help <conw ?>
-	if wildcards[1] == "?" then
+	if wildcards[1] == "?" or wildcards[1] == "help" then
 		local comlist = {
 			"conw - update window with consider all command.",
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
-			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
+--			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
 			"conw flags - toggle showing of flags on and off.",
-			"conw ? - show this help."
+			"conw ?|help - show this help."
 		}
 		for i,v in ipairs (comlist) do
 			local sSpa = string.rep (" ", 20 - v:sub(1,v:find("-") - 1):len() )
@@ -189,7 +189,9 @@ function Conw (name, line, wildcards)
 			ColourTell ("white", "blue", "Consider on kill - ON.")
 			ColourNote ("", "black", " ")
 		end
-		EnableTriggerGroup("auto_consider_on_kill", conw_kill)
+		if conw_on == 1 then
+			EnableTriggerGroup("auto_consider_on_kill", conw_kill)
+		end
 		return
 	end
 
@@ -203,7 +205,9 @@ function Conw (name, line, wildcards)
 			ColourTell ("white", "blue", "Consider on entry - ON.")
 			ColourNote ("", "black", " ")
 		end
-		EnableTriggerGroup("auto_consider_on_entry", conw_entry)
+		if conw_on == 1 then
+			EnableTriggerGroup("auto_consider_on_entry", conw_entry)
+		end
 		return
 	end
 
@@ -217,7 +221,9 @@ function Conw (name, line, wildcards)
 			ColourTell ("white", "blue", "Consider on misc - ON.")
 			ColourNote ("", "black", " ")
 		end
-		EnableTriggerGroup("auto_consider_misc", conw_misc)
+		if conw_on == 1 then
+			EnableTriggerGroup("auto_consider_misc", conw_misc)
+		end
 		return
 	end
 
