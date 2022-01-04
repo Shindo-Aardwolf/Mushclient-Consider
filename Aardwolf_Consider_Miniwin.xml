@@ -12,13 +12,13 @@
 	 5) Tested on Aardwolf Mudclient R1802 | Mushclient version 4.93 - http://www.aardwolf.com/play/downloadmc.htm -->
 <!-- More updates by Kobus November 2017
 	* Converted all consider triggers to regex including all possible flags, short or long
-	* Replaced a gsub in adapt_consider with wildcard from the regex
-	* Added gsub loop in adapt_consider for mobs with ?, ! or " in their names (nod Khannon)
+	* Replaced a gsub in Adapt_consider with wildcard from the regex
+	* Added gsub loop in Adapt_consider for mobs with ?, ! or " in their names (nod Khannon)
 	* Triggers now set color and level range variables for the miniwindow
-	* Removed for loop in adapt_consider, no longer needed with color, range variables set by the triggers
+	* Removed for loop in Adapt_consider, no longer needed with color, range variables set by the triggers
 	* Removed the consider_messages table as it is no longer needed with color, range set by the triggers
 	* Added 2 triggers suggested on the forum for noexp and mob entry on repop
-	* Removed call to adapt_consider when "You see no one here but yourself!"
+	* Removed call to Adapt_consider when "You see no one here but yourself!"
 	* Added 4 triggers for unkillable mobs (for omit only)
 	* Added a trigger for mobs already being challenged (omit only)
 	* Added a trigger for safe rooms (omit only)
@@ -58,7 +58,7 @@
 		match="^(\(.+\) ?)?(.+) looks a little worried about the idea\.$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -72,7 +72,7 @@
 		match="^(\(.+\) ?)?(.+) says 'BEGONE FROM MY SIGHT unworthy!'$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -86,7 +86,7 @@
 		match="^(\(.+\) ?)?(.+) should be a fair fight!$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -100,7 +100,7 @@
 		match="^(\(.+\) ?)?(.+) snickers nervously\.$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -114,7 +114,7 @@
 		match="^(\(.+\) ?)?(.+) would be easy, but is it even worth the work out\?$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -128,7 +128,7 @@
 		match="^(\(.+\) ?)?(.+) would crush you like a bug!$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -142,7 +142,7 @@
 		keep_evaluating="y"
 		omit_from_output="y"
 		regexp="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -156,7 +156,7 @@
 		keep_evaluating="y"
 		omit_from_output="y"
 		regexp="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -170,7 +170,7 @@
 		match="^(\(.+\) ?)?Challenging (.+) would be either very brave or very stupid\.$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -184,7 +184,7 @@
 		match="^(\(.+\) ?)?No Problem! (.+) is weak compared to you\.$"
 		keep_evaluating="y"
 		omit_from_output="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -198,7 +198,7 @@
 		keep_evaluating="y"
 		omit_from_output="y"
 		regexp="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -212,7 +212,7 @@
 		keep_evaluating="y"
 		omit_from_output="y"
 		regexp="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -226,7 +226,7 @@
 		keep_evaluating="y"
 		omit_from_output="y"
 		regexp="y"
-		script="adapt_consider"
+		script="Adapt_consider"
 		sequence="100"
 		send_to="12"
 		>
@@ -315,62 +315,63 @@
 		sequence="1"
 		>
 	</trigger>
+<!-- triggers for running consider automatically -->
 	<trigger
 		enabled="n"
-		group="auto_consider"
+		group="auto_consider_on_kill"
 		match="^You have set your character to receive no experience points!$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
-		script="send_consider"
+		script="Send_consider"
 		send_to="12"
 		sequence="1"
 		>
 	</trigger>
 	<trigger
 		enabled="n"
-		group="auto_consider"
+		group="auto_consider_misc"
 		match="^.+ appears in the room\.$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
-		script="send_consider"
+		script="Send_consider"
 		send_to="12"
 		sequence="1"
 		>
 	</trigger>
 	<trigger
 		enabled="n"
-		group="auto_consider"
+		group="auto_consider_on_kill"
 		match="^You receive .+ experience points\.$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
-		script="send_consider"
+		script="Send_consider"
 		send_to="12"
 		sequence="1"
 		>
 	</trigger>
 	<trigger
 		enabled="n"
-		group="auto_consider"
-		match="^\[ Exits"
-		omit_from_output="n"
-		keep_evaluating="y"
-		regexp="y"
-		script="send_consider"
-		send_to="12"
-		sequence="1"
-		>
-	</trigger>
-	<trigger
-		enabled="n"
-		group="auto_consider"
+		group="auto_consider_misc"
 		match="^.+ has fled!$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
-		script="send_consider"
+		script="Send_consider"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_consider_on_entry"
+		match="^\[ Exits"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Send_consider"
 		send_to="12"
 		sequence="1"
 		>
@@ -380,7 +381,7 @@
 <!-- Aliases -->
 <aliases>
 	<alias
-		script="conw"
+		script="Conw"
 		match="^conw\s(.*)$"
 		keep_evaluating="y"
 		enabled="y"
@@ -390,7 +391,7 @@
 		>
 	</alias>
 	<alias
-		script="send_consider"
+		script="Send_consider"
 		match="^conw$"
 		keep_evaluating="y"
 		enabled="y"
@@ -400,7 +401,7 @@
 		>
 	</alias>
 	<alias
-		script="command_line"
+		script="Command_line"
 		match="^(\d+)\s?(\w*)$"
 		enabled="y"
 		regexp="y"

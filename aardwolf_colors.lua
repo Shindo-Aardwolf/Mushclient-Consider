@@ -140,8 +140,8 @@ local code_to_client_color = {}
 local client_color_to_dim_code = {}
 local client_color_to_bold_code = {}
 
-local function init_basic_to_color ()
-   default_black = GetNormalColour(BLACK)
+function Init_basic_to_color ()
+   Default_black = GetNormalColour(BLACK)
 
    code_to_client_color = {
       [RED_CODE] = GetNormalColour(RED),
@@ -162,7 +162,7 @@ local function init_basic_to_color ()
    }
 end
 
-local function init_color_to_basic ()
+function Init_color_to_basic ()
    client_color_to_dim_code = {
       [code_to_client_color[RED_CODE]] = RED_CODE,
       [code_to_client_color[GREEN_CODE]] = GREEN_CODE,
@@ -185,9 +185,9 @@ local function init_color_to_basic ()
    }
 end
 
-local function init_basic_colors ()
-   init_basic_to_color()
-   init_color_to_basic()
+function Init_basic_colors ()
+   Init_basic_to_color()
+   Init_color_to_basic()
 end
 
 
@@ -196,7 +196,7 @@ local client_color_to_xterm_number = {}
 local client_color_to_xterm_code = {}
 local x_to_client_color = {}
 local x_not_too_dark = {}
-local function init_xterm_colors ()
+function Init_xterm_colors ()
    for i = 0,255 do
       local color = xterm_number_to_client_color[i]
       x_not_too_dark[i] = i
@@ -227,11 +227,11 @@ local function init_xterm_colors ()
    end
 end
 
-init_xterm_colors()
-init_basic_colors()
+Init_xterm_colors()
+Init_basic_colors()
 
 function StylesToColours (styles, dollarC_resets)
-   init_basic_colors()
+   Init_basic_colors()
    local line = {}
    local lastcode = ""
    for i,style in ipairs(styles) do
@@ -314,7 +314,9 @@ end
 
 -- Converts text with colour codes in it into style runs
 function ColoursToStyles (input, default_foreground_code, default_background_code)
-   init_basic_to_color()
+   local textcolor = ""
+   local num = 0
+   Init_basic_to_color()
    if default_foreground_code and default_foreground_code:sub(1,1) ~= CODE_PREFIX then
       default_foreground_code = CODE_PREFIX..default_foreground_code
    end
@@ -332,7 +334,7 @@ function ColoursToStyles (input, default_foreground_code, default_background_cod
    end
    local default_background = code_to_client_color[default_background_code] or x_to_client_color[default_background_code]
    if not default_background then
-      default_background = default_black
+      default_background = Default_black
    end
 
    if input:find(CODE_PREFIX, nil, true) then
@@ -397,7 +399,7 @@ end  -- function ColoursToStyles
 
 
 -- Strip all color codes from a string
-function strip_colours (s)
+function Strip_colours (s)
    s = s:gsub(PREFIX_ESCAPE, "\0")  -- change @@ to 0x00
    s = s:gsub(TILDE_PATTERN, "~")    -- fix tildes (historical)
    s = s:gsub(X_ANY_DIGITS_PATTERN, "") -- strip valid and invalid xterm color codes
@@ -407,7 +409,7 @@ end -- strip_colours
 
 
 -- Convert Aardwolf and short x codes to 3 digit x codes
-function canonicalize_colours (s, keep_original)
+function Canonicalize_colours (s, keep_original)
    if s:find(CODE_PREFIX, nil, true) then
       s = s:gsub(X_DIGITS_CAPTURE_PATTERN, function(a)
          local b = tonumber(a)
@@ -431,7 +433,7 @@ end
 
 
 -- Strip all color codes from a table of styles
-function strip_colours_from_styles (styles)
+function Strip_colours_from_styles (styles)
    local ret = {}
    for i,v in ipairs(styles) do
       table.insert(ret, v.text)
@@ -442,10 +444,10 @@ end
 
 -- Returns a string with embedded ansi codes.
 -- This can get confused if the player has redefined their color chart.
-function stylesToANSI (styles, dollarC_resets)
+function StylesToANSI (styles, dollarC_resets)
    local line = {}
    local lastcode = ""
-   init_basic_colors()
+   Init_basic_colors()
    for _,v in ipairs(styles) do
       local code = ""
       local textcolor = v.textcolour
@@ -585,7 +587,7 @@ end -- StylesToColoursOneLine
 
 
 -- should have been marked local to prevent external use
-colour_conversion = {
+local colour_conversion = {
    [BLACK_CHAR] = GetNormalColour(BLACK)   ,   -- 0x000000
    [RED_CHAR] = GetNormalColour(RED)     ,   -- 0x000080
    [GREEN_CHAR] = GetNormalColour(GREEN)   ,   -- 0x008000
@@ -604,4 +606,4 @@ colour_conversion = {
    [BOLD_WHITE_CHAR] = GetBoldColour(WHITE)   ,   -- 0xFFFFFF
 }  -- end conversion table
 
-atletter_to_color_value = colour_conversion -- lol. https://github.com/endavis/bastmush/commit/6f8aec07449a55a65ccece05c1ab3a0139d70e54
+local atletter_to_color_value = colour_conversion -- lol. https://github.com/endavis/bastmush/commit/6f8aec07449a55a65ccece05c1ab3a0139d70e54

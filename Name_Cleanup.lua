@@ -1,4 +1,4 @@
-function stripname(nametostrip, CurrentZone)
+function Stripname(nametostrip, CurrentZone)
 	-- this is to set the zone if we didn't already
 	if CurrentZone == nil then
 		CurrentZone = gmcp("room.info.zone")
