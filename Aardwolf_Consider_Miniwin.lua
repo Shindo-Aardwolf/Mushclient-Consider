@@ -271,7 +271,7 @@ function Execute_command (id, s)
 	ColourTell ("white", "blue", default_command.. " ".. s)
 	ColourNote ("", "black", " ")
 
-end -- execute_command
+end -- Execute_command
 
 function Command_line (name, line, wildcards)
 	local iNum = tonumber (wildcards[1])
@@ -441,7 +441,7 @@ function Show_Window ()
 		"", -- CancelMouseOver
 		"", -- MouseDown
 		"", -- CancelMouseDown
-		"execute_command", -- MouseUp
+		"Execute_command", -- MouseUp
 		sBalloon,
 		1, -- Cursor
 		0) --  Flag
