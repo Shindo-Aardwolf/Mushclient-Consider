@@ -84,7 +84,7 @@ function OnPluginBroadcast (msg, id, name, text)
 			luastmt = "gmcpdata = " .. gmcparg
 			assert (loadstring (luastmt or "")) ()
 			currentState = tonumber(gmcpval("status.state"))
---			DebugNote("char.status.state : " ..currentState)
+			--			DebugNote("char.status.state : " ..currentState)
 
 		end
 	end
@@ -123,7 +123,7 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
---			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
+			--			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
 			"conw flags - toggle showing of flags on and off.",
@@ -322,14 +322,17 @@ end
 
 function Process_flags (flags)
 	local newflags = ''
-	if string.find(flags,"%(W%)") then
+	if string.find(flags,"%(W%)")  or
+		string.find(flags,"%(White Aura%)") then
 		newflags = newflags.. "@x015(W)"
 	else
 		newflags = newflags.. "   "
 	end
-	if string.find(flags,"%(R%)") then
+	if string.find(flags,"%(R%)") or
+		string.find(flags,"%(Red Aura%)") then
 		newflags = newflags.. "@x001(R)"
-	elseif string.find(flags,"%(G%)") then
+	elseif string.find(flags,"%(G%)") or
+		string.find(flags,"%(Golden Aura%)") then
 		newflags = newflags.. "@x003(G)"
 	else
 		newflags = newflags.. "   "
@@ -554,8 +557,6 @@ function OnPluginInstall ()
 	conw_kill = tonumber(GetVariable("conw_kill")) or 1
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
 
-
---	EnableTriggerGroup ("auto_consider", conw_on)
 	if conw_on == "1"then
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
