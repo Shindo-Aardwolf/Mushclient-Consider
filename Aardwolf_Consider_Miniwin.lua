@@ -48,6 +48,7 @@ local conw_kill = tonumber(GetVariable("conw_kill")) or 1
 local conw_misc = tonumber(GetVariable("conw_misc")) or 1
 
 local search_destroy_id = "e50b1d08a0cfc0ee9c442001"
+local search_destroy_crowley_id = "30000000537461726c696e67"
 
 local banner_height = 0
 local currentState = -1
@@ -84,7 +85,7 @@ function OnPluginBroadcast (msg, id, name, text)
 			luastmt = "gmcpdata = " .. gmcparg
 			assert (loadstring (luastmt or "")) ()
 			currentState = tonumber(gmcpval("status.state"))
-			--			DebugNote("char.status.state : " ..currentState)
+--			DebugNote("char.status.state : " ..currentState)
 
 		end
 	end
@@ -123,7 +124,7 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
-			--			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
+--			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
 			"conw flags - toggle showing of flags on and off.",
@@ -309,6 +310,9 @@ function GetKeyword(mob)
 	if (GetPluginInfo(search_destroy_id, 17)) then
 		local gmcproomdata = gmcp("room")
 		_, mob, _ = CallPlugin( search_destroy_id, "IGuessMobNameBroadcast", mob, gmcproomdata.info.zone) 
+        elseif (GetPluginInfo(search_destroy_crowley_id, 17)) then
+                local gmcproomdata = gmcp("room")
+                _, mob = CallPlugin(search_destroy_crowley_id, "gmkw", mob, gmcproomdata.info.zone)
 	else
 		mob = Stripname(mob)
 	end
@@ -557,6 +561,7 @@ function OnPluginInstall ()
 	conw_kill = tonumber(GetVariable("conw_kill")) or 1
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
 
+	EnableTriggerGroup ("auto_consider", conw_on)
 	if conw_on == "1"then
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)

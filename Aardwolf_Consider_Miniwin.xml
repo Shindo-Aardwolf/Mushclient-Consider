@@ -24,6 +24,9 @@
 	* Added a trigger for safe rooms (omit only)
 	* Added suggestion on install for the help command 'conw ?'
 -->
+<!-- Updates by Athlau 2022
+	* Added support for custom keywords from Crowley's version of S&D
+-->
 <muclient>
 	<plugin
 		name="Aardwolf_Consider_Window"
