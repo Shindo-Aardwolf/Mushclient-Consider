@@ -26,6 +26,7 @@
 -->
 <!-- Updates by Athlau 2022
 	* Added support for custom keywords from Crowley's version of S&D
+	* Added cownall command
 -->
 <muclient>
 	<plugin
@@ -411,6 +412,16 @@
 		send_to="12"
 		keep_evaluating="y"
 		sequence="1"
+		>
+	</alias>
+	<alias
+		script="Conw_all"
+		match="^conwall$"
+		keep_evaluating="y"
+		enabled="y"
+		regexp="y"
+		send_to="12"
+		sequence="99"
 		>
 	</alias>
 </aliases>

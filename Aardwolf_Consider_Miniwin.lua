@@ -124,6 +124,7 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
+			"conwall - Execute all targets with default word.",
 --			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
@@ -298,6 +299,19 @@ function Command_line (name, line, wildcards)
 	end
 
 end -- Command_line
+
+function Conw_all(name, line, wildcards)
+       if #targT == 0 then
+		ColourTell ("white", "blue", "no targets to conwall")
+		ColourNote ("", "black", " ")
+       end
+
+       for i = #targT, 1, -1 do
+		Execute (default_command.. " ".. targT[i].keyword)
+		ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
+		ColourNote ("", "black", " ")
+       end
+end -- Conw_all
 
 function GetKeyword(mob)
 	local nameCount = 1
