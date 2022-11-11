@@ -576,7 +576,7 @@ function OnPluginInstall ()
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
 
 	EnableTriggerGroup ("auto_consider", conw_on)
-	if conw_on == "1"then
+	if tonumber(conw_on) == 1 then
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 		EnableTriggerGroup ("auto_consider_misc", conw_misc)

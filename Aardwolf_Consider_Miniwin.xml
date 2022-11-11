@@ -27,6 +27,7 @@
 <!-- Updates by Athlau 2022
 	* Added support for custom keywords from Crowley's version of S&D
 	* Added cownall command
+	* Fixed triggers enable on plugin load
 -->
 <muclient>
 	<plugin
