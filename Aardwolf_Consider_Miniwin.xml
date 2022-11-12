@@ -28,6 +28,7 @@
 	* Added support for custom keywords from Crowley's version of S&D
 	* Added cownall command
 	* Fixed triggers enable on plugin load
+	* Strikeout killed mobs in the consider window
 -->
 <muclient>
 	<plugin
@@ -315,7 +316,7 @@
 		omit_from_output="y"
 		keep_evaluating="n"
 		regexp="y"
-		script="Show_Window"
+		script="Consider_end"
 		send_to="12"
 		sequence="1"
 		>
@@ -357,6 +358,31 @@
 		sequence="1"
 		>
 	</trigger>
+	<trigger
+		enabled="y"
+		group="auto_track_kills"
+		match="^(.*)! \w+ is DEAD!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) is slain by a final .*!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+
 	<trigger
 		enabled="n"
 		group="auto_consider_misc"

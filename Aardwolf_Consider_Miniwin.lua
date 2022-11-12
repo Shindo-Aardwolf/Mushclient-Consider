@@ -155,6 +155,7 @@ function Conw (name, line, wildcards)
 			EnableTriggerGroup ("auto_consider_on_entry", 0)
 			EnableTriggerGroup ("auto_consider_on_kill", 0)
 			EnableTriggerGroup ("auto_consider_misc", 0)
+			EnableTriggerGroup ("auto_track_kills", 0)
 			ColourTell ("white", "blue", "Auto consider off.")
 			ColourNote ("", "black", " ")
 		else
@@ -162,6 +163,7 @@ function Conw (name, line, wildcards)
 			EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 			EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 			EnableTriggerGroup ("auto_consider_misc", conw_misc)
+			EnableTriggerGroup ("auto_track_kills", 1)
 			ColourTell ("white", "blue", "Auto consider on.")
 			ColourNote ("", "black", " ")
 		end
@@ -174,6 +176,7 @@ function Conw (name, line, wildcards)
 		EnableTriggerGroup ("auto_consider_on_kill", 0)
 		EnableTriggerGroup ("auto_consider_on_entry", 0)
 		EnableTriggerGroup ("auto_consider_misc", 0)
+		EnableTriggerGroup ("auto_track_kills", 0)
 		ColourTell ("white", "blue", "Auto consider off.")
 		ColourNote ("", "black", " ")
 		Show_Window()
@@ -185,6 +188,7 @@ function Conw (name, line, wildcards)
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 		EnableTriggerGroup ("auto_consider_misc", conw_misc)
+		EnableTriggerGroup ("auto_track_kills", 1)
 		ColourTell ("white", "blue", "Auto consider on.")
 		ColourNote ("", "black", " ")
 		Show_Window()
@@ -264,10 +268,10 @@ function Send_consider ()
 		return
 	else
 		SetVariable ("doing_consider", "true")
+		SetVariable ("waiting_for_consider_start", "true")
 		EnableTriggerGroup ("consider", true)
 		SendNoEcho ("consider all")
 		SendNoEcho ("echo nhm")
-		targT = {}
 	end
 
 end -- Send_consider
@@ -353,6 +357,16 @@ function Conw_all(name, line, wildcards)
 		end
 	end
 end -- Conw_all
+
+function Update_kill(name, line, wildcards)
+	for i = #targT, 1, -1 do
+		if not targT[i].dead and (line:sub(1, #targT[i].name) == targT[i].name) then
+			targT[i].dead = true
+			Show_Window()
+			break
+		end
+	end
+end
 
 function Default_conwall_options()
 	local default_options = {
@@ -463,6 +477,11 @@ function Process_flags (flags)
 end
 
 function Adapt_consider (name, line, wildcards)
+	if GetVariable("waiting_for_consider_start") == "true" then
+		SetVariable ("waiting_for_consider_start", "false")
+		targT = {}
+	end
+
 	local flags = nil
 	if SHOW_FLAGS then-- we want to be able to show the flags to the user - Shindo
 		flags = Process_flags(wildcards[1]) 
@@ -481,7 +500,8 @@ function Adapt_consider (name, line, wildcards)
 			line    = line,
 			colour  = mob_color,
 			range   = "(".. mob_range.. ")",
-			message = line
+			message = line,
+			dead    = false,
 		} -- Changed to use color, range set by triggers - Kobus
 		if ECHO_CONSIDER then
 			--ColourTell   --build the string in parts
@@ -535,6 +555,16 @@ function Draw_Title ()
 
 end -- MakeTitle
 
+function Consider_end()
+	if GetVariable("waiting_for_consider_start") == "true" then
+		SetVariable ("waiting_for_consider_start", "false")
+		targT = {}
+	end
+	Show_Window()
+	SetVariable ("doing_consider", "false")
+	EnableTriggerGroup ("consider", false)
+end -- Consider_end
+
 function Show_Window ()
 
 	-- get width and height and draw the window
@@ -563,9 +593,15 @@ function Show_Window ()
 	local bottom  = top + Font_height
 
 	for i,v in ipairs (targT) do
+		local fontid;
+		if v.dead then
+			fontid = FontStrikeout_id
+		else
+			fontid = Font_id
+		end
 		local sLine = tostring(i).. ". ".. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
-		right   = WindowTextWidth (Win, Font_id, Strip_colours(sLine)) + left
-		Theme.WindowTextFromStyles(Win, Font_id, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
+		right   = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
+		Theme.WindowTextFromStyles(Win, fontid, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
 		local sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. v.keyword.. "'"
 		WindowAddHotspot (Win, v.keyword.. ":".. tostring (i), left, top, right, bottom,
 		"", -- MouseOver
@@ -584,9 +620,6 @@ function Show_Window ()
 	Draw_Title()
 
 	WindowShow (Win, true)
-	SetVariable ("doing_consider", "false")
-	EnableTriggerGroup ("consider", false)
-
 end -- Show_Consider
 
 function Show_Banner ()
@@ -659,6 +692,7 @@ function OnPluginInstall ()
 	end -- if
 
 	Font_id = "consider_font"
+	FontStrikeout_id = "consider_strikeout_font"
 
 	Windowinfo = movewindow.install (Win, 6, miniwin.create_absolute_location)
 
@@ -675,10 +709,13 @@ function OnPluginInstall ()
 	Ascent = WindowFontInfo (Win, Font_id, 2)
 	Descent = WindowFontInfo (Win, Font_id, 3)
 
+	WindowFont (Win, FontStrikeout_id, Font_name, Font_size, false, false, false, true, 0, 0)  -- strikeout
+
 	default_command = GetVariable ("default_command") or "kill"
 	keyword_position = GetVariable ("keyword_position") or "endw"
 
 	SetVariable ("doing_consider", "false")
+	SetVariable ("waiting_for_consider_start", "false")
 
 	conw_on = tonumber(GetVariable("conw_on")) or 1
 	conw_entry = tonumber(GetVariable("conw_entry")) or 1
@@ -690,10 +727,12 @@ function OnPluginInstall ()
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 		EnableTriggerGroup ("auto_consider_misc", conw_misc)
+		EnableTriggerGroup ("auto_track_kills", 1)
 	else
 		EnableTriggerGroup ("auto_consider_on_entry", 0)
 		EnableTriggerGroup ("auto_consider_on_kill", 0)
 		EnableTriggerGroup ("auto_consider_misc", 0)
+		EnableTriggerGroup ("auto_track_kills", 0)
 	end
 
 	if GetVariable ("enabled") == "false" then
@@ -725,6 +764,7 @@ function OnPluginSaveState ()
 
 	SetVariable ("enabled", tostring (GetPluginInfo (GetPluginID (), 17)))
 	SetVariable ("doing_consider", "false")
+	SetVariable ("waiting_for_consider_start", "false")
 	SetVariable("conw_misc", conw_misc)
 	SetVariable("conw_kill", conw_kill)
 	SetVariable("conw_entry", conw_entry)
