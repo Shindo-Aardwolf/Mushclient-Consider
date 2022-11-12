@@ -334,13 +334,13 @@ function Conw_all(name, line, wildcards)
 		minlevel = tonumber(minlevel)
 		maxlevel = tonumber(maxlevel)
 
-		if conwall_options.skip_evil and string.match(targT[i].mflags, "%(R%)") then
+		if conwall_options.skip_evil and (targT[i].mflags:match("%(R%)") or targT[i].mflags:match("%(red aura%)")) then
 			ColourTell ("white", "blue", "Skipping EVIL ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
-		elseif conwall_options.skip_good and string.match(targT[i].mflags, "%(G%)") then
+		elseif conwall_options.skip_good and (targT[i].mflags:match("%(G%)") or targT[i].mflags:match("%(golden aura%)")) then
 			ColourTell ("white", "blue", "Skipping GOOD ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
-		elseif conwall_options.skip_sanctuary and string.match(targT[i].mflags, "%(W%)") then
+		elseif conwall_options.skip_sanctuary and (targT[i].mflags:match("%(W%)") or targT[i].mflags:match("%(white aura%)")) then
 			ColourTell ("white", "blue", "Skipping SANCTUARY ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
 		elseif minlevel < conwall_options.min_level or maxlevel > conwall_options.max_level then
