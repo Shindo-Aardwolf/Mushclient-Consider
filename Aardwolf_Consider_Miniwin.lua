@@ -505,6 +505,9 @@ function Draw_Title ()
 	local entrycheck = {"@RE", "@GE"}
 	local killcheck = {"@RK", "@GK"}
 	local misccheck = {"@RM@W", "@GM@W"}
+	local skipevil = {"@GR@W", "@RR@W"}
+	local skipgood = {"@GG@W", "@RG@W"}
+	local skipsanc = {"@GW@W", "@RW@W"}
 
 	--draw the title and add drag hotspot
 	local top     = BORDER_WIDTH + LINE_SPACING
@@ -514,9 +517,13 @@ function Draw_Title ()
 
 	movewindow.add_drag_handler (Win, 0, top, right, bottom, 1)
 	if (conw_on==1) then
-		consider_status = "@GON@W "..entrycheck[conw_entry+1]..killcheck[conw_kill+1]..misccheck[conw_misc+1] 
+		consider_status = "@GON@W "..entrycheck[conw_entry+1]..killcheck[conw_kill+1]..misccheck[conw_misc+1].." "
+				  ..skipevil[(conwall_options.skip_evil and 1 or 0)+1]
+				  ..skipgood[(conwall_options.skip_good and 1 or 0)+1]
+				  ..skipsanc[(conwall_options.skip_sanctuary and 1 or 0)+1]
+				  .." "..string.format("%+d", conwall_options.min_level)..".."..string.format("%+d", conwall_options.max_level)
 	else 
-		consider_status = "@ROFF@W" 
+		consider_status = "@ROFF@W"
 	end
 	title_text = ColoursToStyles(string.format("@W%s (%s) - %s", TITLE, default_command, consider_status))
 	Theme.WindowTextFromStyles(Win, Font_id, title_text, left, top, right, bottom, utf8)
@@ -702,8 +709,7 @@ function OnPluginInstall ()
 end -- OnPluginInstall
 
 function OnPluginEnable ()
-
-	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - OFF")
+	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - ON EKM RGW -100..+100")
 	Banner_width = Title_width + BORDER_WIDTH * 2 + TEXT_OFFSET * 2
 	Show_Banner ()
 
