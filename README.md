@@ -1,6 +1,9 @@
 # Mushclient-Consider
 This plugin creates and displays a numbered list of the mobs in a room. Currently the output is to a mini-window but future versions may include only outputting to the main window when toggled to do so by the user.
 
+https://user-images.githubusercontent.com/118027636/201498973-cc41e779-2336-4a27-a8e3-03e8b50606ae.jpg
+
+Note: This plugin picks up custom mob keywords from S&D (either Crowley's or Winkle's versions)
 # Commands
   - conw - update window with consider all command.  
   - \<num\> \<word\> - Execute \<word\> with keyword from line \<num\> on consider window.  
