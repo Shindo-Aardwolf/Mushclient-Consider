@@ -68,7 +68,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "chartreuse"
-			mob_range = "-2 to -6"</send>
+			mob_range = "-2 to -4"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -96,7 +96,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "springgreen"
-			mob_range = "-2 to +2"</send>
+			mob_range = "-1 to +1"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -110,7 +110,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "darkgoldenrod"
-			mob_range = "+2 to +3"</send>
+			mob_range = "+2 to +4"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -180,7 +180,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "crimson"
-			mob_range = "+16 to +21"</send>
+			mob_range = "+16 to +20"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -194,7 +194,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "forestgreen"
-			mob_range = "-6 to -9"</send>
+			mob_range = "-5 to -9"</send>
 	</trigger>
 	<trigger
 		enabled="n"
