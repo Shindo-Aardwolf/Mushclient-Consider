@@ -166,7 +166,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "tomato"
-			mob_range = "+8 to +16"</send>
+			mob_range = "+10 to +15"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -222,7 +222,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "gray"
-			mob_range = "-19 and below"</send>
+			mob_range = "-20 and below"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -236,7 +236,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "gold"
-			mob_range = "+3 to +8"</send>
+			mob_range = "+5 to +9"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -418,6 +418,16 @@
 	<alias
 		script="Conw_all"
 		match="^conwall$"
+		keep_evaluating="y"
+		enabled="y"
+		regexp="y"
+		send_to="12"
+		sequence="99"
+		>
+	</alias>
+	<alias
+		script="Conw_all_options"
+		match="^conwall options(.*)$"
 		keep_evaluating="y"
 		enabled="y"
 		regexp="y"

@@ -40,12 +40,15 @@ require "aard_register_z_on_create"
 require "mw_theme_base"
 require "movewindow"
 require "gmcphelper"
+require "var"
 
 --consider flags
 local conw_on = tonumber(GetVariable("conw_on")) or 1
 local conw_entry = tonumber(GetVariable("conw_entry")) or 1
 local conw_kill = tonumber(GetVariable("conw_kill")) or 1
 local conw_misc = tonumber(GetVariable("conw_misc")) or 1
+
+local conwall_options = {}
 
 local search_destroy_id = "e50b1d08a0cfc0ee9c442001"
 local search_destroy_crowley_id = "30000000537461726c696e67"
@@ -124,8 +127,15 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
-			"conwall - Execute all targets with default word.",
---			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
+			"conwall - Execute all targets matching selected options with default word.",
+			"conwall options - See current conwall options",
+			"  conwall options SkipEvil - toggle skip Evil mobs",
+			"  conwall options SkipGood - toggle skip Good mobs",
+			"  conwall options SkipSanctuary - toggle skip mobs with Sanctuary",
+			"  conwall options MinLevel <number> - skip mobs with level range lower than this number",
+			"    For example: conwal options MinLevel -2 - will skips mobs with level range below -2",
+			"  conwall options MaxLevel <number> - skip mobs with level range higher than this number",
+			"    For example: conwal options MaxLevel 21 - will skips mobs with level range above +21",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
 			"conw flags - toggle showing of flags on and off.",
@@ -301,17 +311,110 @@ function Command_line (name, line, wildcards)
 end -- Command_line
 
 function Conw_all(name, line, wildcards)
-       if #targT == 0 then
+	if #targT == 0 then
 		ColourTell ("white", "blue", "no targets to conwall")
 		ColourNote ("", "black", " ")
-       end
+	end
 
-       for i = #targT, 1, -1 do
-		Execute (default_command.. " ".. targT[i].keyword)
-		ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
-		ColourNote ("", "black", " ")
-       end
+	for i = #targT, 1, -1 do
+		local minlevel, maxlevel = string.match(targT[i].range, "([+-]?%d+) to ([+-]?%d+)")
+		if not minlevel or not maxlevel then
+			if string.match(targT[i].range, "%-20 or below") then
+				minlevel = -300
+				maxlevel = -20
+			elseif string.match(targT[i].range, "%+50 or above") then
+				minlevel = 50
+				maxlevel = 300
+			else
+				Note("Something went off the rails...")
+				minlevel = -300
+				maxlevel = 300
+			end
+		end
+		minlevel = tonumber(minlevel)
+		maxlevel = tonumber(maxlevel)
+
+		if conwall_options.skip_evil and string.match(targT[i].mflags, "%(R%)") then
+			ColourTell ("white", "blue", "Skipping EVIL ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+		elseif conwall_options.skip_good and string.match(targT[i].mflags, "%(G%)") then
+			ColourTell ("white", "blue", "Skipping GOOD ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+		elseif conwall_options.skip_sanctuary and string.match(targT[i].mflags, "%(W%)") then
+			ColourTell ("white", "blue", "Skipping SANCTUARY ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+		elseif minlevel < conwall_options.min_level or maxlevel > conwall_options.max_level then
+			ColourTell ("white", "blue", "Skipping out of level range ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+		else
+			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+			Execute (default_command.. " ".. targT[i].keyword)
+		end
+	end
 end -- Conw_all
+
+function Default_conwall_options()
+	local default_options = {
+		skip_evil = false,
+		skip_good = false,
+		skip_sanctuary = false,
+		min_level = -2,
+		max_level = 20,
+	}
+	return serialize.save_simple(default_options)
+end
+
+function Load_conwall_options()
+	conwall_options = loadstring(string.format("return %s", var.config or Default_conwall_options()))()
+	Save_conwall_options()
+end
+
+function Save_conwall_options()
+	var.config = serialize.save_simple(conwall_options)
+end
+
+function ShowNote(str)
+	AnsiNote(stylesToANSI(ColoursToStyles(string.format("@w%s@w", str))))
+end
+
+function Conw_all_options(name, line, wildcards)
+	if wildcards[1] == "" then
+		Note("Current conwall options:")
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipEvil", conwall_options.skip_evil and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
+	elseif wildcards[1] == " SkipEvil" then
+		Note("Changed conwall option:")
+		conwall_options.skip_evil = not conwall_options.skip_evil
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipEvil", conwall_options.skip_evil and "@GYes" or "@RNo"))
+		Save_conwall_options()
+	elseif wildcards[1] == " SkipGood" then
+		Note("Changed conwall option:")
+		conwall_options.skip_good = not conwall_options.skip_good
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		Save_conwall_options()
+	elseif wildcards[1] == " SkipSanctuary" then
+		Note("Changed conwall option:")
+		conwall_options.skip_sanctuary = not conwall_options.skip_sanctuary
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
+		Save_conwall_options()
+	elseif string.match(wildcards[1], " MinLevel %-?%d+") then
+		Note("Changed conwall option:")
+		conwall_options.min_level = tonumber(string.match(wildcards[1], " MinLevel (%-?%d+)"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
+		Save_conwall_options()
+	elseif string.match(wildcards[1], " MaxLevel %-?%d+") then
+		Note("Changed conwall option:")
+		conwall_options.max_level = tonumber(string.match(wildcards[1], " MaxLevel (%-?%d+)"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
+		Save_conwall_options()
+	else
+		Note("Unknown conwall command!")
+	end
+end
 
 function GetKeyword(mob)
 	local nameCount = 1
@@ -592,6 +695,8 @@ function OnPluginInstall ()
 		return
 	end -- they didn't enable us last time
 
+	Load_conwall_options()
+
 	OnPluginEnable ()
 
 end -- OnPluginInstall
@@ -619,6 +724,7 @@ function OnPluginSaveState ()
 	SetVariable("conw_entry", conw_entry)
 	SetVariable("conw_on", conw_on)
 	movewindow.save_state (Win)
+	Save_conwall_options()
 
 end -- OnPluginSaveState
 
