@@ -334,9 +334,13 @@ function Conw_all(name, line, wildcards)
 				minlevel = -300
 				maxlevel = 300
 			end
+		else
+			minlevel = tonumber(minlevel)
+			maxlevel = tonumber(maxlevel)
+			if minlevel > maxlevel then
+				minlevel, maxlevel = maxlevel, minlevel
+			end
 		end
-		minlevel = tonumber(minlevel)
-		maxlevel = tonumber(maxlevel)
 
 		if conwall_options.skip_evil and (targT[i].mflags:match("%(R%)") or targT[i].mflags:match("%(red aura%)")) then
 			ColourTell ("white", "blue", "Skipping EVIL ".. targT[i].keyword.. " ")
@@ -359,8 +363,9 @@ function Conw_all(name, line, wildcards)
 end -- Conw_all
 
 function Update_kill(name, line, wildcards)
+	--Note("Update_kill wildcards[1]"..wildcards[1])
 	for i = #targT, 1, -1 do
-		if not targT[i].dead and (line:sub(1, #targT[i].name) == targT[i].name) then
+		if not targT[i].dead and (wildcards[1]:sub(1, #targT[i].name) == targT[i].name) then
 			targT[i].dead = true
 			Show_Window()
 			break
