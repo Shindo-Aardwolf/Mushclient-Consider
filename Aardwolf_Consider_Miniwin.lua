@@ -323,7 +323,7 @@ function Conw_all(name, line, wildcards)
 	for i = #targT, 1, -1 do
 		local minlevel, maxlevel = string.match(targT[i].range, "([+-]?%d+) to ([+-]?%d+)")
 		if not minlevel or not maxlevel then
-			if string.match(targT[i].range, "%-20 or below") then
+			if string.match(targT[i].range, "%-20 and below") then
 				minlevel = -300
 				maxlevel = -20
 			elseif string.match(targT[i].range, "%+50 or above") then
