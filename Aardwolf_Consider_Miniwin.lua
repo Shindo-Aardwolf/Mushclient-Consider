@@ -342,7 +342,10 @@ function Conw_all(name, line, wildcards)
 			end
 		end
 
-		if conwall_options.skip_evil and (targT[i].mflags:match("%(R%)") or targT[i].mflags:match("%(red aura%)")) then
+		if targT[i].attacked then
+			ColourTell ("white", "blue", "Skipping already attacked ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+		elseif conwall_options.skip_evil and (targT[i].mflags:match("%(R%)") or targT[i].mflags:match("%(red aura%)")) then
 			ColourTell ("white", "blue", "Skipping EVIL ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
 		elseif conwall_options.skip_good and (targT[i].mflags:match("%(G%)") or targT[i].mflags:match("%(golden aura%)")) then
@@ -357,15 +360,32 @@ function Conw_all(name, line, wildcards)
 		else
 			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
+			targT[i].attacked = true
 			Execute (default_command.. " ".. targT[i].keyword)
 		end
 	end
+	Show_Window()
 end -- Conw_all
 
 function Update_kill(name, line, wildcards)
 	--Note("Update_kill wildcards[1]"..wildcards[1])
+	local trigger_name = wildcards[1]:gsub("^%u", string.lower)
+
+	--Try to find attacked mob first in case there're difference align or level mobs with the same name
 	for i = #targT, 1, -1 do
-		if not targT[i].dead and (wildcards[1]:sub(1, #targT[i].name) == targT[i].name) then
+		--Lower case first character as it's done in some death messages like kills with "project force" etc.
+		local list_name = targT[i].name:gsub("^%u", string.lower)
+		if targT[i].attacked and not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
+			targT[i].dead = true
+			Show_Window()
+			return
+		end
+	end
+
+	--Fallback to check any mob with given name
+	for i = #targT, 1, -1 do
+		local list_name = targT[i].name:gsub("^%u", string.lower)
+		if not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
 			targT[i].dead = true
 			Show_Window()
 			break
@@ -507,6 +527,7 @@ function Adapt_consider (name, line, wildcards)
 			range   = "(".. mob_range.. ")",
 			message = line,
 			dead    = false,
+			attacked = false,
 		} -- Changed to use color, range set by triggers - Kobus
 		if ECHO_CONSIDER then
 			--ColourTell   --build the string in parts
@@ -575,7 +596,7 @@ function Show_Window ()
 	-- get width and height and draw the window
 	if #targT > 0 then
 		for i,v in ipairs (targT) do
-			Window_width = math.max((WindowTextWidth (Win, Font_id, tostring(i).. ". ".. Strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), Banner_width, Window_width)
+			Window_width = math.max((WindowTextWidth (Win, Font_id, tostring(i).. ".   ".. Strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), Banner_width, Window_width)
 		end
 	else
 		Window_width = Banner_width
@@ -604,7 +625,8 @@ function Show_Window ()
 		else
 			fontid = Font_id
 		end
-		local sLine = tostring(i).. ". ".. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
+		local sAttacked = v.attacked and "@G\215@W " or "  "
+		local sLine = tostring(i).. ". ".. sAttacked.. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
 		right   = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
 		Theme.WindowTextFromStyles(Win, fontid, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
 		local sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. v.keyword.. "'"
