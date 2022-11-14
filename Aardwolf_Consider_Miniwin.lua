@@ -681,7 +681,7 @@ function Update_Current_Target()
 	end
 	if not found then
 		for i = #targT, 1, -1 do
-			if not targT[i].dead and targT[i].attacked and targT[i].name:lower() == target then
+			if not targT[i].dead and targT[i].name:lower() == target then
 				targT[i].aimed = true
 				found = true
 				break
