@@ -88,6 +88,7 @@ function OnPluginBroadcast (msg, id, name, text)
 			luastmt = "gmcpdata = " .. gmcparg
 			assert (loadstring (luastmt or "")) ()
 			currentState = tonumber(gmcpval("status.state"))
+			Update_Current_Target()
 --			DebugNote("char.status.state : " ..currentState)
 
 		end
@@ -320,6 +321,64 @@ function Command_line (name, line, wildcards)
 
 end -- Command_line
 
+function ShouldSkipMob(mob, show_messages)
+	local minlevel, maxlevel = string.match(mob.range, "([+-]?%d+) to ([+-]?%d+)")
+	if not minlevel or not maxlevel then
+		if string.match(mob.range, "%-20 and below") then
+			minlevel = -300
+			maxlevel = -20
+		elseif string.match(mob.range, "%+50 or above") then
+			minlevel = 50
+			maxlevel = 300
+		else
+			Note("Something went off the rails...")
+			minlevel = -300
+			maxlevel = 300
+		end
+	else
+		minlevel = tonumber(minlevel)
+		maxlevel = tonumber(maxlevel)
+		if minlevel > maxlevel then
+			minlevel, maxlevel = maxlevel, minlevel
+		end
+	end
+
+	if mob.attacked then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping already attacked ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif mob.dead then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping already dead ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_evil and (mob.mflags:match("%(R%)") or mob.mflags:match("%(red aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping EVIL ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_good and (mob.mflags:match("%(G%)") or mob.mflags:match("%(golden aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping GOOD ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_sanctuary and (mob.mflags:match("%(W%)") or mob.mflags:match("%(white aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping SANCTUARY ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif minlevel < conwall_options.min_level or maxlevel > conwall_options.max_level then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping out of level range ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	else
+		return false
+	end
+	return true
+end
+
 function Conw_all(name, line, wildcards)
 	if #targT == 0 then
 		ColourTell ("white", "blue", "no targets to conwall")
@@ -327,46 +386,7 @@ function Conw_all(name, line, wildcards)
 	end
 
 	for i = #targT, 1, -1 do
-		local minlevel, maxlevel = string.match(targT[i].range, "([+-]?%d+) to ([+-]?%d+)")
-		if not minlevel or not maxlevel then
-			if string.match(targT[i].range, "%-20 and below") then
-				minlevel = -300
-				maxlevel = -20
-			elseif string.match(targT[i].range, "%+50 or above") then
-				minlevel = 50
-				maxlevel = 300
-			else
-				Note("Something went off the rails...")
-				minlevel = -300
-				maxlevel = 300
-			end
-		else
-			minlevel = tonumber(minlevel)
-			maxlevel = tonumber(maxlevel)
-			if minlevel > maxlevel then
-				minlevel, maxlevel = maxlevel, minlevel
-			end
-		end
-
-		if targT[i].attacked then
-			ColourTell ("white", "blue", "Skipping already attacked ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
-		elseif targT[i].dead then
-			ColourTell ("white", "blue", "Skipping already dead ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
-		elseif conwall_options.skip_evil and (targT[i].mflags:match("%(R%)") or targT[i].mflags:match("%(red aura%)")) then
-			ColourTell ("white", "blue", "Skipping EVIL ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
-		elseif conwall_options.skip_good and (targT[i].mflags:match("%(G%)") or targT[i].mflags:match("%(golden aura%)")) then
-			ColourTell ("white", "blue", "Skipping GOOD ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
-		elseif conwall_options.skip_sanctuary and (targT[i].mflags:match("%(W%)") or targT[i].mflags:match("%(white aura%)")) then
-			ColourTell ("white", "blue", "Skipping SANCTUARY ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
-		elseif minlevel < conwall_options.min_level or maxlevel > conwall_options.max_level then
-			ColourTell ("white", "blue", "Skipping out of level range ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
-		else
+		if not ShouldSkipMob(targT[i], true) then
 			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
 			targT[i].attacked = true
@@ -406,17 +426,19 @@ end
 function Notify_Attack(name, line, wildcards)
 	--strip out leading and trailing '
 	local mob = wildcards[1]:gsub("^'", ""):gsub("'$", "")
+	local found = false
 	for i = #targT, 1, -1 do
 		if targT[i].keyword == mob then
 			targT[i].attacked = true
 			Show_Window()
+			found = true
 			break
 		end
 		--S&D have random() calls when deciding how many characters to use from each of word of mob keywords...
 		--see if all words in attack command and mob kws are substrings of one another
-		local targ_words = targT[i].keyword:gmatch("%S+")
+		local targ_words = targT[i].keyword:lower():gmatch("%S+")
 		local match = true
-		for word in mob:gmatch("%S+") do
+		for word in mob:lower():gmatch("%S+") do
 			local target = targ_words()
 			if target==nil or not (word:sub(1, #target) == target or target:sub(1, #word) == word) then
 				match = false
@@ -426,7 +448,16 @@ function Notify_Attack(name, line, wildcards)
 		if match and targ_words() == nil then
 			targT[i].attacked = true
 			Show_Window()
+			found = true
 			break
+		end
+	end
+
+	if not found then
+		Note("can't find target: "..mob)
+		Note("mobs in room:")
+		for i = #targT, 1, -1 do
+			Note(tostring(i)..". "..targT[i].keyword)
 		end
 	end
 end
@@ -566,6 +597,7 @@ function Adapt_consider (name, line, wildcards)
 			message = line,
 			dead    = false,
 			attacked = false,
+			aimed   = false,
 		} -- Changed to use color, range set by triggers - Kobus
 		if ECHO_CONSIDER then
 			--ColourTell   --build the string in parts
@@ -629,8 +661,37 @@ function Consider_end()
 	EnableTriggerGroup ("consider", false)
 end -- Consider_end
 
-function Show_Window ()
+function Update_Current_Target()
+	local target = gmcp("char.status.enemy")
+	if target == nil or target =="" then
+		return
+	end
+	target = target:lower()
 
+	for i = #targT, 1, -1 do
+		targT[i].aimed = false
+	end
+	local found = false
+	for i = #targT, 1, -1 do
+		if not targT[i].dead and targT[i].attacked and targT[i].name:lower() == target then
+			targT[i].aimed = true
+			found = true
+			break
+		end
+	end
+	if not found then
+		for i = #targT, 1, -1 do
+			if not targT[i].dead and targT[i].attacked and targT[i].name:lower() == target then
+				targT[i].aimed = true
+				found = true
+				break
+			end
+		end
+	end
+	Show_Window()
+end
+
+function Show_Window ()
 	-- get width and height and draw the window
 	if #targT > 0 then
 		for i,v in ipairs (targT) do
@@ -658,12 +719,8 @@ function Show_Window ()
 
 	for i,v in ipairs (targT) do
 		local fontid;
-		if v.dead then
-			fontid = FontStrikeout_id
-		else
-			fontid = Font_id
-		end
-		local sAttacked = v.attacked and "@G\215@W " or "  "
+		fontid = v.dead and FontStrikeout_id or ((v.aimed or not ShouldSkipMob(v, false)) and FontBold_id or Font_id)
+		local sAttacked = (v.aimed and not v.dead) and "@R\215@W " or (v.attacked and "@G\215@W " or "  ")
 		local sLine = tostring(i).. ". ".. sAttacked.. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
 		right   = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
 		Theme.WindowTextFromStyles(Win, fontid, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
@@ -758,6 +815,7 @@ function OnPluginInstall ()
 
 	Font_id = "consider_font"
 	FontStrikeout_id = "consider_strikeout_font"
+	FontBold_id = "consider_bold_font"
 
 	Windowinfo = movewindow.install (Win, 6, miniwin.create_absolute_location)
 
@@ -775,6 +833,7 @@ function OnPluginInstall ()
 	Descent = WindowFontInfo (Win, Font_id, 3)
 
 	WindowFont (Win, FontStrikeout_id, Font_name, Font_size, false, false, false, true, 0, 0)  -- strikeout
+	WindowFont (Win, FontBold_id, Font_name, Font_size, true, false, false, false, 0, 0)  -- bold
 
 	default_command = GetVariable ("default_command") or "kill"
 	keyword_position = GetVariable ("keyword_position") or "endw"
