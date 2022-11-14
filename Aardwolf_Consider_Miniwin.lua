@@ -411,16 +411,14 @@ function Notify_Attack(name)
 		--see if all words in attack command and mob kws are substrings of one another
 		local targ_words = targT[i].keyword:gmatch("%S+")
 		local match = true
-		local count = 0
 		for word in mob:gmatch("%S+") do
 			local target = targ_words()
 			if target==nil or not (word:sub(1, #target) == target or target:sub(1, #word) == word) then
 				match = false
 				break
 			end
-			count = count +1
 		end
-		if match and count >= 2 then
+		if match and targ_words() == nil then
 			targT[i].attacked = true
 			Show_Window()
 			break
