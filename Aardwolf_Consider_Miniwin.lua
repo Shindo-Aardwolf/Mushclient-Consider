@@ -304,6 +304,7 @@ function Command_line (name, line, wildcards)
 	end
 
 	if targT[iNum] then
+		targT[iNum].attacked = true
 		Execute (sKey.. " ".. targT[iNum].keyword)
 		ColourTell ("white", "blue", sKey.. " ".. targT[iNum].keyword.. " ")
 		ColourNote ("", "black", " ")
@@ -344,6 +345,9 @@ function Conw_all(name, line, wildcards)
 
 		if targT[i].attacked then
 			ColourTell ("white", "blue", "Skipping already attacked ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+		elseif targT[i].dead then
+			ColourTell ("white", "blue", "Skipping already dead ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
 		elseif conwall_options.skip_evil and (targT[i].mflags:match("%(R%)") or targT[i].mflags:match("%(red aura%)")) then
 			ColourTell ("white", "blue", "Skipping EVIL ".. targT[i].keyword.. " ")
@@ -387,6 +391,37 @@ function Update_kill(name, line, wildcards)
 		local list_name = targT[i].name:gsub("^%u", string.lower)
 		if not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
 			targT[i].dead = true
+			Show_Window()
+			break
+		end
+	end
+end
+
+-- Call this if you're attacking mob yourself but still want a nice "x" mark in the window to appear.
+function Notify_Attack(name)
+	--strip out leading and trailing '
+	local mob = name:gsub("^'", ""):gsub("'$", "")
+	for i = #targT, 1, -1 do
+		if targT[i].keyword == mob then
+			targT[i].attacked = true
+			Show_Window()
+			break
+		end
+		--S&D have random() calls when deciding how many characters to use from each of word of mob keywords...
+		--see if all words in attack command and mob kws are substrings of one another
+		local targ_words = targT[i].keyword:gmatch("%S+")
+		local match = true
+		local count = 0
+		for word in mob:gmatch("%S+") do
+			local target = targ_words()
+			if not word:sub(1, #target) == target and not target:sub(1, #word) == word then
+				match = false
+				break
+			end
+			count = count +1
+		end
+		if match and count >= 2 then
+			targT[i].attacked = true
 			Show_Window()
 			break
 		end
