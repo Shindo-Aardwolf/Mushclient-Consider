@@ -136,6 +136,11 @@ function Conw (name, line, wildcards)
 			"    For example: conwall options MinLevel -2 - will skips mobs with level range below -2",
 			"  conwall options MaxLevel <number> - skip mobs with level range higher than this number",
 			"    For example: conwall options MaxLevel 21 - will skips mobs with level range above +21",
+			"conw_notify_attack <target> - use this alias if you're attacking mob via other commands but",
+			"    want consider window to draw attack mark on that mob.",
+			"    For example when using S&D's kk to attack do the following:",
+			"    xset qk my_uber_attack_alias",
+			"    and have the above alias expand to conw_notify_attack %1;;kill %1",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
 			"conw flags - toggle showing of flags on and off.",
@@ -398,9 +403,9 @@ function Update_kill(name, line, wildcards)
 end
 
 -- Call this if you're attacking mob yourself but still want a nice "x" mark in the window to appear.
-function Notify_Attack(name)
+function Notify_Attack(name, line, wildcards)
 	--strip out leading and trailing '
-	local mob = name:gsub("^'", ""):gsub("'$", "")
+	local mob = wildcards[1]:gsub("^'", ""):gsub("'$", "")
 	for i = #targT, 1, -1 do
 		if targT[i].keyword == mob then
 			targT[i].attacked = true

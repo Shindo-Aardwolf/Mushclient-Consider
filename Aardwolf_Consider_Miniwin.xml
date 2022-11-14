@@ -521,6 +521,15 @@
 		sequence="99"
 		>
 	</alias>
+	<alias
+		script="Notify_Attack"
+		match="conw_notify_attack *"
+		enabled="y"
+		send_to="12"
+		sequence="100"
+	>
+  </alias>
+
 </aliases>
 <!--  Script  -->
 <script>
