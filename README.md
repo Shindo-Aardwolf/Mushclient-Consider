@@ -1,5 +1,8 @@
 # Mushclient-Consider
-This plugin creates and displays a numbered list of the mobs in a room. Currently the output is to a mini-window but future versions may include only outputting to the main window when toggled to do so by the user.
+This plugin creates and displays a numbered list of the mobs in a room.
+Allows killing specific mob in the room with mouse or by just sending mob number like "1", "2" etc.
+Allows killing all mobs in the room filtered by level range, alignment, sanctuary by sending "conwall" command.
+Even while you're stacked window is updated with killed mobs and currently aimed mob.
 
 ![Screenshot](https://user-images.githubusercontent.com/118027636/201795092-4040d6d7-4aff-401e-9f92-d13db66ddeae.jpg)
 ![Screenshot](https://user-images.githubusercontent.com/118027636/201498973-cc41e779-2336-4a27-a8e3-03e8b50606ae.jpg)
