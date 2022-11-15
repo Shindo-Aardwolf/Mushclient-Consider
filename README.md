@@ -1,6 +1,7 @@
 # Mushclient-Consider
 This plugin creates and displays a numbered list of the mobs in a room. Currently the output is to a mini-window but future versions may include only outputting to the main window when toggled to do so by the user.
 
+![Screenshot](https://user-images.githubusercontent.com/118027636/201795092-4040d6d7-4aff-401e-9f92-d13db66ddeae.jpg)
 ![Screenshot](https://user-images.githubusercontent.com/118027636/201498973-cc41e779-2336-4a27-a8e3-03e8b50606ae.jpg)
 
 Note: This plugin picks up custom mob keywords from S&D (either Crowley's or Winkle's versions)
@@ -18,6 +19,10 @@ Note: This plugin picks up custom mob keywords from S&D (either Crowley's or Win
         For example: conwall options MinLevel -2 - will skips mobs with level range below -2.  
   -   conwall options MaxLevel \<number\> - skip mobs with level range higher than this number.  
         For example: conwall options MaxLevel 21 - will skips mobs with level range above +21.  
+  - conw_notify_attack <target> - use this alias if you're attacking mob via other commands but
+			want consider window to draw attack mark on that mob.
+			For example when using S&D's kk to attack do the following "xset qk my_uber_attack_alias"
+			and have the above alias expand to "conw_notify_attack %1;kill %1"
   - conw auto|on|off - toggle auto update consider window on room entry and after combat.  
   - conw flags - toggle showing of flags on and off.  
   - conw ? - show this help.  
