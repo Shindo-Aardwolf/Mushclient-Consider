@@ -209,7 +209,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "magenta"
-			mob_range = "+50 and above"</send>
+			mob_range = "+51 and above"</send>
 	</trigger>
 	<trigger
 		enabled="n"

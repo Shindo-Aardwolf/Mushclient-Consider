@@ -327,7 +327,7 @@ function ShouldSkipMob(mob, show_messages)
 		if string.match(mob.range, "%-20 and below") then
 			minlevel = -300
 			maxlevel = -20
-		elseif string.match(mob.range, "%+50 or above") then
+		elseif string.match(mob.range, "%+51 and above") then
 			minlevel = 50
 			maxlevel = 300
 		else
