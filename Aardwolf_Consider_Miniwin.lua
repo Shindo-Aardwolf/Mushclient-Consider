@@ -666,7 +666,7 @@ function Update_Current_Target()
 	if target == nil or target =="" then
 		return
 	end
-	target = target:lower()
+	target = Strip_colours(target:lower())
 
 	for i = #targT, 1, -1 do
 		targT[i].aimed = false
