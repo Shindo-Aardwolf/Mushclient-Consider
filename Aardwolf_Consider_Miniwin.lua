@@ -470,11 +470,21 @@ function Default_conwall_options()
 		min_level = -2,
 		max_level = 20,
 	}
-	return serialize.save_simple(default_options)
+	return default_options
+end
+
+function Check_conwall_options()
+	if conwall_options.min_level == nil then
+		conwall_options.min_level = Default_conwall_options().min_level
+	end
+	if conwall_options.max_level == nil then
+		conwall_options.max_level = Default_conwall_options().max_level
+	end
 end
 
 function Load_conwall_options()
-	conwall_options = loadstring(string.format("return %s", var.config or Default_conwall_options()))()
+	conwall_options = loadstring(string.format("return %s", var.config or serialize.save_simple(Default_conwall_options())))()
+	Check_conwall_options()
 	Save_conwall_options()
 end
 
@@ -498,26 +508,31 @@ function Conw_all_options(name, line, wildcards)
 		Note("Changed conwall option:")
 		conwall_options.skip_evil = not conwall_options.skip_evil
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipEvil", conwall_options.skip_evil and "@GYes" or "@RNo"))
+		Show_Window()
 		Save_conwall_options()
 	elseif wildcards[1] == " SkipGood" then
 		Note("Changed conwall option:")
 		conwall_options.skip_good = not conwall_options.skip_good
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		Show_Window()
 		Save_conwall_options()
 	elseif wildcards[1] == " SkipSanctuary" then
 		Note("Changed conwall option:")
 		conwall_options.skip_sanctuary = not conwall_options.skip_sanctuary
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
+		Show_Window()
 		Save_conwall_options()
 	elseif string.match(wildcards[1], " MinLevel %-?%d+") then
 		Note("Changed conwall option:")
 		conwall_options.min_level = tonumber(string.match(wildcards[1], " MinLevel (%-?%d+)"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
+		Show_Window()
 		Save_conwall_options()
 	elseif string.match(wildcards[1], " MaxLevel %-?%d+") then
 		Note("Changed conwall option:")
 		conwall_options.max_level = tonumber(string.match(wildcards[1], " MaxLevel (%-?%d+)"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
+		Show_Window()
 		Save_conwall_options()
 	else
 		Note("Unknown conwall command!")
