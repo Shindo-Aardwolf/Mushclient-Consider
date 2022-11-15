@@ -421,6 +421,18 @@
 	<trigger
 		enabled="n"
 		group="auto_track_kills"
+		match="^(.*) screams in agony as the acid consumes it!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
 		match="^(.*) crumbles as \w+ is battered to death!!$"
 		omit_from_output="n"
 		keep_evaluating="y"
