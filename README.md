@@ -14,6 +14,7 @@ Note: This plugin picks up custom mob keywords from S&D (either Crowley's or Win
   - \<num\> - Execute with default word.  
   - conw \<word\> - set default command to word.  
   - conwall - Execute all targets matching selected options with default word.  
+  - conwallslow - Execute all targets without stacking (executes next after kill).  
   - conwall options - See current conwall options.  
   -   conwall options SkipEvil - toggle skip Evil mobs.  
   -   conwall options SkipGood - toggle skip Good mobs.  

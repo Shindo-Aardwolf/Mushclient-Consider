@@ -512,6 +512,18 @@
 		regexp="y"
 		script="Send_consider"
 		send_to="12"
+		sequence="2"
+		>
+	</trigger>
+	<trigger
+		enabled="y"
+		group="conwallslow"
+		match="^\[ Exits"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Cancel_conwallslow"
+		send_to="12"
 		sequence="1"
 		>
 	</trigger>
@@ -552,6 +564,16 @@
 	<alias
 		script="Conw_all"
 		match="^conwall$"
+		keep_evaluating="y"
+		enabled="y"
+		regexp="y"
+		send_to="12"
+		sequence="99"
+		>
+	</alias>
+	<alias
+		script="Conw_all_slow"
+		match="^conwallslow$"
 		keep_evaluating="y"
 		enabled="y"
 		regexp="y"

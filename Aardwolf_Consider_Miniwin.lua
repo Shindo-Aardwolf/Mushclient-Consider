@@ -129,6 +129,7 @@ function Conw (name, line, wildcards)
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
 			"conwall - Execute all targets matching selected options with default word.",
+                        "conwallslow - Execute all targets without stacking (executes next after kill)",
 			"conwall options - See current conwall options",
 			"  conwall options SkipEvil - toggle skip Evil mobs",
 			"  conwall options SkipGood - toggle skip Good mobs",
@@ -266,11 +267,11 @@ function Conw (name, line, wildcards)
 		ColourNote ("", "black", " ")
 	end
 
-end -- Send_consider
+end -- Conw
 
 function Send_consider ()
 
-	if GetVariable ("doing_consider") == "true" then
+	if GetVariable ("doing_consider") == "true" or GetVariable("doing_conwallslow") == "true" then
 		return
 	else
 		SetVariable ("doing_consider", "true")
@@ -299,6 +300,7 @@ function Command_line (name, line, wildcards)
 	local iNum = tonumber (wildcards[1])
 	local sKey = ""
 
+	SetVariable("doing_conwallslow", "false")
 	if iNum > #targT then
 		return
 	end
@@ -380,6 +382,8 @@ function ShouldSkipMob(mob, show_messages)
 end
 
 function Conw_all(name, line, wildcards)
+	SetVariable("doing_conwallslow", "false")
+
 	if #targT == 0 then
 		ColourTell ("white", "blue", "no targets to conwall")
 		ColourNote ("", "black", " ")
@@ -396,6 +400,38 @@ function Conw_all(name, line, wildcards)
 	Show_Window()
 end -- Conw_all
 
+function Conw_all_slow(name, line, wildcards)
+	if #targT == 0 then
+		ColourTell ("white", "blue", "no targets to conwall")
+		ColourNote ("", "black", " ")
+	end
+	local found = false
+	for i = #targT, 1, -1 do
+		if not ShouldSkipMob(targT[i], true) then
+			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
+			ColourNote ("", "black", " ")
+			targT[i].attacked = true
+			Execute (default_command.. " ".. targT[i].keyword)
+			SetVariable("doing_conwallslow", "true")
+			found = true
+			break
+		end
+	end
+	if not found then
+		ColourTell ("white", "blue", "no targets to conwallslow")
+		ColourNote ("", "black", " ")
+		if GetVariable("doing_conwallslow") == "true" then
+			SetVariable("doing_conwallslow", "false")
+			Send_consider()
+		end
+	end
+	Show_Window()
+end
+
+function Cancel_conwallslow(name, line, wildcards)
+	SetVariable("doing_conwallslow", "false")
+end
+
 function Update_kill(name, line, wildcards)
 	--Note("Update_kill wildcards[1]"..wildcards[1])
 	local trigger_name = wildcards[1]:gsub("^%u", string.lower)
@@ -407,6 +443,9 @@ function Update_kill(name, line, wildcards)
 		if targT[i].attacked and not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
 			targT[i].dead = true
 			Show_Window()
+			if GetVariable("doing_conwallslow") == "true" then
+				Conw_all_slow()
+			end
 			return
 		end
 	end
@@ -417,8 +456,15 @@ function Update_kill(name, line, wildcards)
 		if not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
 			targT[i].dead = true
 			Show_Window()
+			if GetVariable("doing_conwallslow") == "true" then
+				Conw_all_slow()
+			end
 			break
 		end
+	end
+
+	if GetVariable("doing_conwallslow") == "true" then
+		Conw_all_slow()
 	end
 end
 
