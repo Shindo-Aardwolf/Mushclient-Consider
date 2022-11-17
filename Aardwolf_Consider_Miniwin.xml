@@ -527,7 +527,18 @@
 		sequence="1"
 		>
 	</trigger>
-
+	<trigger
+		enabled="y"
+		group="conwallslow"
+		match="^They aren't here\.$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Conw_all_slow_next"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
 </triggers>
 <!-- Aliases -->
 <aliases>

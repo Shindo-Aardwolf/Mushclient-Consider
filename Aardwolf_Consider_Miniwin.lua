@@ -428,6 +428,12 @@ function Conw_all_slow(name, line, wildcards)
 	Show_Window()
 end
 
+function Conw_all_slow_next(name, line, wildcards)
+	if GetVariable("doing_conwallslow") == "true" then
+		Conw_all_slow()
+	end
+end
+
 function Cancel_conwallslow(name, line, wildcards)
 	SetVariable("doing_conwallslow", "false")
 end
