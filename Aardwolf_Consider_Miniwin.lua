@@ -407,7 +407,7 @@ function Conw_all_slow(name, line, wildcards)
 	end
 	local found = false
 	for i = #targT, 1, -1 do
-		if not ShouldSkipMob(targT[i], true) then
+		if not ShouldSkipMob(targT[i], false) then
 			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
 			ColourNote ("", "black", " ")
 			targT[i].attacked = true
