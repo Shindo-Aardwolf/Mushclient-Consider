@@ -470,8 +470,9 @@ end
 
 -- Call this if you're attacking mob yourself but still want a nice "x" mark in the window to appear.
 function Notify_Attack(name, line, wildcards)
-	--strip out leading and trailing '
-	local mob = wildcards[1]:gsub("^'", ""):gsub("'$", "")
+	local mob = wildcards[1]
+	local mob_num = mob:find("^%d+%.") and mob:sub(mob:find("^%d+%."))
+	local mob_stripped = mob:gsub("^%d+%.'?", ""):gsub("'$","")
 	local found = false
 	for i = #targT, 1, -1 do
 		if targT[i].keyword == mob then
@@ -480,22 +481,28 @@ function Notify_Attack(name, line, wildcards)
 			found = true
 			break
 		end
+
 		--S&D have random() calls when deciding how many characters to use from each of word of mob keywords...
 		--see if all words in attack command and mob kws are substrings of one another
-		local targ_words = targT[i].keyword:lower():gmatch("%S+")
-		local match = true
-		for word in mob:lower():gmatch("%S+") do
-			local target = targ_words()
-			if target==nil or not (word:sub(1, #target) == target or target:sub(1, #word) == word) then
-				match = false
+		--Check if mob and target numbers match first, then compare the words
+		local target_num = targT[i].keyword:find("^%d+%.") and targT[i].keyword:sub(targT[i].keyword:find("^%d+%."))
+		if mob_num == target_num then
+			local target_stripped = targT[i].keyword:gsub("^%d+%.'?", ""):gsub("'$","")
+			local targ_words = target_stripped:lower():gmatch("%S+")
+			local match = true
+			for word in mob_stripped:lower():gmatch("%S+") do
+				local target = targ_words()
+				if target==nil or not (word:sub(1, #target) == target or target:sub(1, #word) == word) then
+					match = false
+					break
+				end
+			end
+			if match and targ_words() == nil then
+				targT[i].attacked = true
+				Show_Window()
+				found = true
 				break
 			end
-		end
-		if match and targ_words() == nil then
-			targT[i].attacked = true
-			Show_Window()
-			found = true
-			break
 		end
 	end
 
@@ -603,6 +610,7 @@ function GetKeyword(mob)
 		mob = Stripname(mob)
 	end
 
+	mob = "'" .. mob .. "'"
 	if nameCount > 1 then
 		mob = string.format("%s.%s", tostring(nameCount), mob)
 	end
