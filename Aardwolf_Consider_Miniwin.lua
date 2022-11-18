@@ -270,8 +270,7 @@ function Conw (name, line, wildcards)
 end -- Conw
 
 function Send_consider ()
-
-	if GetVariable ("doing_consider") == "true" or GetVariable("doing_conwallslow") == "true" then
+	if GetVariable("doing_consider") == "true" or GetVariable("doing_conwallslow") == "true" then
 		return
 	else
 		SetVariable ("doing_consider", "true")
@@ -280,20 +279,22 @@ function Send_consider ()
 		SendNoEcho ("consider all")
 		SendNoEcho ("echo nhm")
 	end
-
 end -- Send_consider
 
-function Execute_command (id, s)
+function Ececute_Mob(command, index)
+	Execute (command.. " ".. tostring(targT[index].index).. ".".. targT[index].keyword)
+	ColourTell ("white", "blue", command.. " ".. tostring(targT[index].index).. ".".. targT[index].keyword)
+	ColourNote ("", "black", " ")
+end
 
+function Execute_command (id, s)
 	if not s then
 		return
 	end
-
 	s = s:match ("^([%d.%w' ]+)%:%d+$")
 	Execute (default_command.. " ".. s)
 	ColourTell ("white", "blue", default_command.. " ".. s)
 	ColourNote ("", "black", " ")
-
 end -- Execute_command
 
 function Command_line (name, line, wildcards)
@@ -313,9 +314,7 @@ function Command_line (name, line, wildcards)
 
 	if targT[iNum] then
 		targT[iNum].attacked = true
-		Execute (sKey.. " ".. targT[iNum].keyword)
-		ColourTell ("white", "blue", sKey.. " ".. targT[iNum].keyword.. " ")
-		ColourNote ("", "black", " ")
+		Ececute_Mob(sKey, iNum)
 	else
 		ColourTell ("white", "blue", "no target in targT ")
 		ColourNote ("", "black", " ")
@@ -333,7 +332,6 @@ function ShouldSkipMob(mob, show_messages)
 			minlevel = 50
 			maxlevel = 300
 		else
-			Note("Something went off the rails...")
 			minlevel = -300
 			maxlevel = 300
 		end
@@ -345,7 +343,12 @@ function ShouldSkipMob(mob, show_messages)
 		end
 	end
 
-	if mob.attacked then
+	if mob.left or mob.came then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping moved ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif mob.attacked then
 		if show_messages then
 			ColourTell ("white", "blue", "Skipping already attacked ".. mob.keyword.. " ")
 			ColourNote ("", "black", " ")
@@ -391,10 +394,8 @@ function Conw_all(name, line, wildcards)
 
 	for i = #targT, 1, -1 do
 		if not ShouldSkipMob(targT[i], true) then
-			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
 			targT[i].attacked = true
-			Execute (default_command.. " ".. targT[i].keyword)
+			Ececute_Mob(default_command, i)
 		end
 	end
 	Show_Window()
@@ -408,12 +409,10 @@ function Conw_all_slow(name, line, wildcards)
 	local found = false
 	for i = #targT, 1, -1 do
 		if not ShouldSkipMob(targT[i], false) then
-			ColourTell ("white", "blue", default_command.. " ".. targT[i].keyword.. " ")
-			ColourNote ("", "black", " ")
 			targT[i].attacked = true
-			Execute (default_command.. " ".. targT[i].keyword)
 			SetVariable("doing_conwallslow", "true")
 			found = true
+			Ececute_Mob(default_command, i)
 			break
 		end
 	end
@@ -439,7 +438,8 @@ function Cancel_conwallslow(name, line, wildcards)
 end
 
 function Update_kill(name, line, wildcards)
-	--Note("Update_kill wildcards[1]"..wildcards[1])
+	--Note("KILL!!!!! ["..wildcards[1].."]")
+
 	local trigger_name = wildcards[1]:gsub("^%u", string.lower)
 
 	--Try to find attacked mob first in case there're difference align or level mobs with the same name
@@ -448,6 +448,9 @@ function Update_kill(name, line, wildcards)
 		local list_name = targT[i].name:gsub("^%u", string.lower)
 		if targT[i].attacked and not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
 			targT[i].dead = true
+			targT[i].mflags = " dead "
+			targT[i].pct = 0
+			Update_mobs_indicies(i+1)
 			Show_Window()
 			if GetVariable("doing_conwallslow") == "true" then
 				Conw_all_slow()
@@ -461,11 +464,14 @@ function Update_kill(name, line, wildcards)
 		local list_name = targT[i].name:gsub("^%u", string.lower)
 		if not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
 			targT[i].dead = true
+			targT[i].mflags = " dead "
+			targT[i].pct = 0
+			Update_mobs_indicies(i+1)
 			Show_Window()
 			if GetVariable("doing_conwallslow") == "true" then
 				Conw_all_slow()
 			end
-			break
+			return
 		end
 	end
 
@@ -474,14 +480,87 @@ function Update_kill(name, line, wildcards)
 	end
 end
 
+function Update_mobs_indicies(from)
+	for i = #targT, from, -1 do
+		local count = 1
+		for j = i - 1, 1, -1 do
+			if targT[i].name == targT[j].name and not (targT[j].dead or targT[j].left) then
+				count = count + 1
+			end
+		end
+		targT[i].index = count
+	end
+end
+
+function Update_mob_came(name, line, wildcards)
+	--Note("CAME!!!!! ["..wildcards[1].."]")
+
+	local mob = wildcards[1]
+	if mob == nil then
+		return
+	end
+	local flags = SHOW_FLAGS and " came " or "      "
+
+	local t = {
+		keyword = GetKeyword(mob),
+		index   = 1,
+		name    = mob,
+		mflags  = flags,
+		line    = line,
+		colour  = "gray",
+		range   = "(???)",
+		message = line,
+		dead    = false,
+		attacked = false,
+		aimed   = false,
+		left    = false,
+		came    = true,
+	}
+	table.insert (targT, 1, t)
+	Update_mobs_indicies(2)
+	Show_Window()
+end
+
+function Update_mob_left(name, line, wildcards)
+	--Note("LEFT!!!!! ["..wildcards[1].."]")
+
+	local mob = wildcards[1]
+	if mob == nil then
+		return
+	end
+	local flags = SHOW_FLAGS and " left " or "      "
+
+	--Try to find alive not attacked mob first in case there're difference mobs with the same name
+	for i = #targT, 1, -1 do
+		if not targT[i].attacked and not targT[i].dead and not targT[i].left and targT[i].name == mob then
+			targT[i].left = true
+			targT[i].mflags = flags
+			Update_mobs_indicies(i)
+			Show_Window()
+			return
+		end
+	end
+
+	--Fallback to check any mob with given name
+	for i = #targT, 1, -1 do
+		if not targT[i].dead and not targT[i].left and targT[i].name == mob then
+			targT[i].left = true
+			targT[i].mflags = flags
+			Update_mobs_indicies(i)
+			Show_Window()
+			break
+		end
+	end
+end
+
 -- Call this if you're attacking mob yourself but still want a nice "x" mark in the window to appear.
 function Notify_Attack(name, line, wildcards)
 	local mob = wildcards[1]
-	local mob_num = mob:find("^%d+%.") and mob:sub(mob:find("^%d+%."))
-	local mob_stripped = mob:gsub("^%d+%.'?", ""):gsub("'$","")
+	local mob_num = tonumber(mob:find("^%d+%.") and mob:sub(mob:find("^%d+%."))) or 1
+	local mob_stripped = mob:gsub("^%d+%.", ""):gsub("^'", ""):gsub("'$","")
 	local found = false
 	for i = #targT, 1, -1 do
-		if targT[i].keyword == mob then
+		if targT[i].index == mob_num and targT[i].keyword:gsub("^'", ""):gsub("'$","") == mob_stripped then
 			targT[i].attacked = true
 			Show_Window()
 			found = true
@@ -491,9 +570,8 @@ function Notify_Attack(name, line, wildcards)
 		--S&D have random() calls when deciding how many characters to use from each of word of mob keywords...
 		--see if all words in attack command and mob kws are substrings of one another
 		--Check if mob and target numbers match first, then compare the words
-		local target_num = targT[i].keyword:find("^%d+%.") and targT[i].keyword:sub(targT[i].keyword:find("^%d+%."))
-		if mob_num == target_num then
-			local target_stripped = targT[i].keyword:gsub("^%d+%.'?", ""):gsub("'$","")
+		if mob_num == targT[i].index then
+			local target_stripped = targT[i].keyword:gsub("^'", ""):gsub("'$","")
 			local targ_words = target_stripped:lower():gmatch("%S+")
 			local match = true
 			for word in mob_stripped:lower():gmatch("%S+") do
@@ -516,7 +594,7 @@ function Notify_Attack(name, line, wildcards)
 		Note("can't find target: "..mob)
 		Note("mobs in room:")
 		for i = #targT, 1, -1 do
-			Note(tostring(i)..". "..targT[i].keyword)
+			Note(tostring(i)..". "..tostring(targT[i].index).. ".".. targT[i].keyword)
 		end
 	end
 end
@@ -608,20 +686,24 @@ function GetKeyword(mob)
 
 	if (GetPluginInfo(search_destroy_id, 17)) then
 		local gmcproomdata = gmcp("room")
-		_, mob, _ = CallPlugin( search_destroy_id, "IGuessMobNameBroadcast", mob, gmcproomdata.info.zone) 
+		if gmcproomdata ~= nil and gmcproomdata.info ~= nil then
+			_, mob, _ = CallPlugin( search_destroy_id, "IGuessMobNameBroadcast", mob, gmcproomdata.info.zone) 
+		else
+			mob = Stripname(mob)
+		end
         elseif (GetPluginInfo(search_destroy_crowley_id, 17)) then
                 local gmcproomdata = gmcp("room")
-                _, mob = CallPlugin(search_destroy_crowley_id, "gmkw", mob, gmcproomdata.info.zone)
+		if gmcproomdata ~= nil and gmcproomdata.info ~= nil then
+			_, mob = CallPlugin(search_destroy_crowley_id, "gmkw", mob, gmcproomdata.info.zone)
+		else
+			mob = Stripname(mob)
+		end
 	else
 		mob = Stripname(mob)
 	end
 
 	mob = "'" .. mob .. "'"
-	if nameCount > 1 then
-		mob = string.format("%s.%s", tostring(nameCount), mob)
-	end
-
-	return mob
+	return mob, nameCount
 end
 
 function Process_flags (flags)
@@ -662,8 +744,11 @@ function Adapt_consider (name, line, wildcards)
 
 	-- Removed for loop here, no longer necessary with color, range set by triggers - Kobus
 	if mob then
+		local keyword, index
+		keyword, index = GetKeyword(mob)
 		local t = {
-			keyword = GetKeyword(mob),
+			keyword = keyword,
+			index   = index,
 			name    = mob,
 			mflags  = flags,
 			line    = line,
@@ -673,7 +758,10 @@ function Adapt_consider (name, line, wildcards)
 			dead    = false,
 			attacked = false,
 			aimed   = false,
+			left    = false,
+			came    = false,
 		} -- Changed to use color, range set by triggers - Kobus
+		--Note("added ".. tostring(t.index).. ".".. tostring(t.keyword))
 		if ECHO_CONSIDER then
 			--ColourTell   --build the string in parts
 			ColourNote (mob_color, "", line.. " (".. mob_range.. ")" )
@@ -748,17 +836,18 @@ function Update_Current_Target()
 	end
 	local found = false
 	for i = #targT, 1, -1 do
-		if not targT[i].dead and targT[i].attacked and targT[i].name:lower() == target then
+		if not targT[i].dead and not targT[i].left and targT[i].attacked and targT[i].name:lower() == target then
 			targT[i].aimed = true
+			targT[i].pct = gmcp("char.status.enemypct")
 			found = true
 			break
 		end
 	end
 	if not found then
 		for i = #targT, 1, -1 do
-			if not targT[i].dead and targT[i].name:lower() == target then
+			if not targT[i].dead and not targT[i].left and targT[i].name:lower() == target then
 				targT[i].aimed = true
-				found = true
+				targT[i].pct = gmcp("char.status.enemypct")
 				break
 			end
 		end
@@ -794,13 +883,22 @@ function Show_Window ()
 
 	for i,v in ipairs (targT) do
 		local fontid;
-		fontid = v.dead and FontStrikeout_id or ((v.aimed or not ShouldSkipMob(v, false)) and FontBold_id or Font_id)
+		fontid = (v.dead or v.left) and FontStrikeout_id or ((v.aimed or not ShouldSkipMob(v, false)) and FontBold_id or Font_id)
 		local sAttacked = (v.aimed and not v.dead) and "@R\215@W " or (v.attacked and "@G\215@W " or "  ")
-		local sLine = tostring(i).. ". ".. sAttacked.. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
+		local sLine = tostring(i).. ". ".. sAttacked.. v.mflags.. " @W"
+		local name_left = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
+		sLine = sLine.. v.name.. " ".. colour_to_ansi[v.colour].. v.range
 		right   = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
+		if v.pct ~= nil then
+			local pct = tonumber(v.pct)
+			if pct ~= nil then
+				local name_len = #Strip_colours(v.name)
+				Theme.DrawTextBox(Win, fontid, name_left, top, string.rep(" ", math.ceil((100-pct) * name_len / 100)), utf8, false, 121, 0)
+			end
+		end
 		Theme.WindowTextFromStyles(Win, fontid, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
-		local sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. v.keyword.. "'"
-		WindowAddHotspot (Win, v.keyword.. ":".. tostring (i), left, top, right, bottom,
+		local sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. tostring(v.index).. ".".. v.keyword.. "'"
+		WindowAddHotspot (Win, v.index.. ".".. v.keyword.. ":".. tostring (i), left, top, right, bottom,
 		"", -- MouseOver
 		"", -- CancelMouseOver
 		"", -- MouseDown

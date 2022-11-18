@@ -343,6 +343,18 @@
 		regexp="y"
 		script="Send_consider"
 		send_to="12"
+		sequence="2"
+		>
+	</trigger>
+	<trigger
+		enabled="y"
+		group="auto_consider_misc"
+		match="^.+ has fled!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Send_consider"
+		send_to="12"
 		sequence="1"
 		>
 	</trigger>
@@ -358,6 +370,19 @@
 		sequence="1"
 		>
 	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_consider_on_entry"
+		match="^\[ Exits"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Send_consider"
+		send_to="12"
+		sequence="2"
+		>
+	</trigger>
+<!-- triggers to update killed mobs  -->
 	<trigger
 		enabled="n"
 		group="auto_track_kills"
@@ -490,31 +515,68 @@
 		sequence="1"
 		>
 	</trigger>
-
 	<trigger
 		enabled="n"
-		group="auto_consider_misc"
-		match="^.+ has fled!$"
+		group="auto_track_kills"
+		match="^(.*) is slain by a final .*!!$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
-		script="Send_consider"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+<!-- triggers to update mobs coming to of leaving the room  -->
+	<trigger
+		enabled="y"
+		group="track_mob_moves"
+		match="^(.+) (?:swims|flies) (?:north|south|east|west|up|down).$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_left"
 		send_to="12"
 		sequence="1"
 		>
 	</trigger>
 	<trigger
-		enabled="n"
-		group="auto_consider_on_entry"
-		match="^\[ Exits"
+		enabled="y"
+		group="track_mob_moves"
+		match="^(.+) (?:skulks|flies) in from the (?:north|south|east|west|up|down).$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
-		script="Send_consider"
+		script="Update_mob_came"
 		send_to="12"
-		sequence="2"
+		sequence="1"
 		>
 	</trigger>
+	<trigger
+		enabled="y"
+		group="track_mob_moves"
+		match="^(.+) appears in the room\.$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_came"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="y"
+		group="track_mob_moves"
+		match="^(.+) has fled!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_left"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+<!-- conwallslow triggers -->
 	<trigger
 		enabled="y"
 		group="conwallslow"
