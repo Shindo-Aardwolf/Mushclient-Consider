@@ -47,6 +47,7 @@ local conw_on = tonumber(GetVariable("conw_on")) or 1
 local conw_entry = tonumber(GetVariable("conw_entry")) or 1
 local conw_kill = tonumber(GetVariable("conw_kill")) or 1
 local conw_misc = tonumber(GetVariable("conw_misc")) or 1
+local conw_execute_mode = GetVariable("conw_execute_mode") or "skill"
 
 local conwall_options = {}
 
@@ -128,6 +129,16 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
+			"conw execute_mode [skill|cast|pro] - shows or sets how target keywords are passed to execute command",
+			"  - MUD server behaves differently when processing multiple keywords target for spells/skills.",
+			"  conw execute_mode skill - execute sends target as <num>.'keyword1 keyword2...'",
+			"  conw execute_mode cast - execute sends target as '<num>.keyword1 keyword2...'",
+			"  conw execute_mode pro - execute sends target as separate arguments without quotes, starting with <num> always.",
+			"  - An example for a 4th mob called 'Strong guard':",
+			"    skill - 4.'strong guard', use directly with skills or aliases like backstab* => backstab %1",
+			"    spell - '4.strong guard', use directly with spells or aliases like mm* => cast 'magic missile' %1",
+			"    pro   - 4 strong guard, use if you know what you're doing.",
+			"  - Note: target number is always present i.e.: 1 strong guard",
 			"conwall - Execute all targets matching selected options with default word.",
                         "conwallslow - Execute all targets without stacking (executes next after kill)",
 			"conwall options - See current conwall options",
@@ -267,6 +278,17 @@ function Conw (name, line, wildcards)
 		ColourNote ("", "black", " ")
 	end
 
+	if wildcards[1] and wildcards[1]:match("^execute_mode") then
+		local new_mode = string.match(wildcards[1], "^execute_mode (%a+)$")
+		if new_mode == "pro" then
+			SetVariable("conw_execute_mode", "pro")
+		elseif new_mode == "skill" then
+			SetVariable("conw_execute_mode", "skill")
+		elseif new_mode == "cast" then
+			SetVariable("conw_execute_mode", "cast")
+		end
+		Note("Conw execute_mode: ".. GetVariable("conw_execute_mode"))
+	end
 end -- Conw
 
 function Send_consider ()
@@ -282,8 +304,16 @@ function Send_consider ()
 end -- Send_consider
 
 function Ececute_Mob(command, index)
-	Execute (command.. " ".. tostring(targT[index].index).. ".".. targT[index].keyword)
-	ColourTell ("white", "blue", command.. " ".. tostring(targT[index].index).. ".".. targT[index].keyword)
+	local target
+	if GetVariable("conw_execute_mode") == "pro" then
+		target = tostring(targT[index].index).. " ".. targT[index].keyword
+	elseif GetVariable("conw_execute_mode") == "cast" then
+		target = "'".. tostring(targT[index].index).. ".".. targT[index].keyword.. "'"
+	else
+		target = tostring(targT[index].index).. ".'".. targT[index].keyword.. "'"
+	end
+	Execute (command.. " ".. target)
+	ColourTell ("white", "blue", command.. " ".. target)
 	ColourNote ("", "black", " ")
 end
 
@@ -556,11 +586,11 @@ end
 -- Call this if you're attacking mob yourself but still want a nice "x" mark in the window to appear.
 function Notify_Attack(name, line, wildcards)
 	local mob = wildcards[1]
-	local mob_num = tonumber(mob:find("^%d+%.") and mob:sub(mob:find("^%d+%."))) or 1
-	local mob_stripped = mob:gsub("^%d+%.", ""):gsub("^'", ""):gsub("'$","")
+	local mob_num = tonumber(mob:match("^'?(%d+)%.")) or 1
+	local mob_stripped = mob:gsub("^'?%d*%.?'?", ""):gsub("'$","")
 	local found = false
 	for i = #targT, 1, -1 do
-		if targT[i].index == mob_num and targT[i].keyword:gsub("^'", ""):gsub("'$","") == mob_stripped then
+		if targT[i].index == mob_num and targT[i].keyword == mob_stripped then
 			targT[i].attacked = true
 			Show_Window()
 			found = true
@@ -571,7 +601,7 @@ function Notify_Attack(name, line, wildcards)
 		--see if all words in attack command and mob kws are substrings of one another
 		--Check if mob and target numbers match first, then compare the words
 		if mob_num == targT[i].index then
-			local target_stripped = targT[i].keyword:gsub("^'", ""):gsub("'$","")
+			local target_stripped = targT[i].keyword
 			local targ_words = target_stripped:lower():gmatch("%S+")
 			local match = true
 			for word in mob_stripped:lower():gmatch("%S+") do
@@ -594,7 +624,7 @@ function Notify_Attack(name, line, wildcards)
 		Note("can't find target: "..mob)
 		Note("mobs in room:")
 		for i = #targT, 1, -1 do
-			Note(tostring(i)..". "..tostring(targT[i].index).. ".".. targT[i].keyword)
+			Note(tostring(i)..". "..tostring(targT[i].index).. " ".. targT[i].keyword)
 		end
 	end
 end
@@ -702,7 +732,6 @@ function GetKeyword(mob)
 		mob = Stripname(mob)
 	end
 
-	mob = "'" .. mob .. "'"
 	return mob, nameCount
 end
 
@@ -1018,6 +1047,8 @@ function OnPluginInstall ()
 	conw_entry = tonumber(GetVariable("conw_entry")) or 1
 	conw_kill = tonumber(GetVariable("conw_kill")) or 1
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
+	conw_execute_mode = GetVariable("conw_execute_mode") or "skill"
+
 
 	EnableTriggerGroup ("auto_consider", conw_on)
 	if tonumber(conw_on) == 1 then
@@ -1066,6 +1097,7 @@ function OnPluginSaveState ()
 	SetVariable("conw_kill", conw_kill)
 	SetVariable("conw_entry", conw_entry)
 	SetVariable("conw_on", conw_on)
+	SetVariable("conw_execute_mode", conw_execute_mode)
 	movewindow.save_state (Win)
 	Save_conwall_options()
 
