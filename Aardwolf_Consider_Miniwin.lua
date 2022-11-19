@@ -58,6 +58,7 @@ local banner_height = 0
 local currentState = -1
 local keyword_position = GetVariable("keyword_position") or "endw"
 local default_command
+local conwall_slow_skip_next_death = false
 
 local targT = {}
 
@@ -90,6 +91,14 @@ function OnPluginBroadcast (msg, id, name, text)
 			assert (loadstring (luastmt or "")) ()
 			currentState = tonumber(gmcpval("status.state"))
 			Update_Current_Target()
+
+			if GetVariable("doing_conwallslow") == "true" and conwall_options.slow_mode == "pct" then
+				local pct = tonumber(gmcp("char.status.enemypct")) or 100
+				if not conwall_slow_skip_next_death and pct <= conwall_options.slow_pct then
+					conwall_slow_skip_next_death = true
+					Conw_all_slow()
+				end
+			end
 --			DebugNote("char.status.state : " ..currentState)
 
 		end
@@ -149,6 +158,11 @@ function Conw (name, line, wildcards)
 			"    - For example: conwall options MinLevel -2 - will skips mobs with level range below -2",
 			"  conwall options MaxLevel <number> - skip mobs with level range higher than this number",
 			"    - For example: conwall options MaxLevel 21 - will skips mobs with level range above +21",
+			"  conwall options SlowMode <kill|pct> - send next target execute command after <kill> or when",
+			"    - current target HP% <= set percentage.",
+			"  conwall options SlowPct <num> - sets percentage for 'SlowMode pct'",
+			"    -  'SlowMode pct' allows you to bleed your attacks/spells to next target in the combat round",
+			"    -  where current target dies. Increases your XP rate a bit.",
 			"conw_notify_attack <target> - use this alias if you're attacking mob via other commands but",
 			"    - want consider window to draw attack mark on that mob.",
 			"    - For example when using S&D's kk to attack do the following:",
@@ -433,8 +447,9 @@ end -- Conw_all
 
 function Conw_all_slow(name, line, wildcards)
 	if #targT == 0 then
-		ColourTell ("white", "blue", "no targets to conwall")
+		ColourTell ("white", "blue", "no targets to conwallslow")
 		ColourNote ("", "black", " ")
+		conwall_slow_skip_next_death = false
 	end
 	local found = false
 	for i = #targT, 1, -1 do
@@ -451,6 +466,7 @@ function Conw_all_slow(name, line, wildcards)
 		ColourNote ("", "black", " ")
 		if GetVariable("doing_conwallslow") == "true" then
 			SetVariable("doing_conwallslow", "false")
+			conwall_slow_skip_next_death = false
 			Send_consider()
 		end
 	end
@@ -483,7 +499,11 @@ function Update_kill(name, line, wildcards)
 			Update_mobs_indicies(i+1)
 			Show_Window()
 			if GetVariable("doing_conwallslow") == "true" then
-				Conw_all_slow()
+				if conwall_slow_skip_next_death then
+					conwall_slow_skip_next_death = false
+				else
+					Conw_all_slow()
+				end
 			end
 			return
 		end
@@ -499,14 +519,22 @@ function Update_kill(name, line, wildcards)
 			Update_mobs_indicies(i+1)
 			Show_Window()
 			if GetVariable("doing_conwallslow") == "true" then
-				Conw_all_slow()
+				if conwall_slow_skip_next_death then
+					conwall_slow_skip_next_death = false
+				else
+					Conw_all_slow()
+				end
 			end
 			return
 		end
 	end
 
 	if GetVariable("doing_conwallslow") == "true" then
-		Conw_all_slow()
+		if conwall_slow_skip_next_death then
+			conwall_slow_skip_next_death = false
+		else
+			Conw_all_slow()
+		end
 	end
 end
 
@@ -636,6 +664,8 @@ function Default_conwall_options()
 		skip_sanctuary = false,
 		min_level = -2,
 		max_level = 20,
+		slow_mode = "pct",
+		slow_pct = 20,
 	}
 	return default_options
 end
@@ -646,6 +676,12 @@ function Check_conwall_options()
 	end
 	if conwall_options.max_level == nil then
 		conwall_options.max_level = Default_conwall_options().max_level
+	end
+	if conwall_options.slow_mode == nil then
+		conwall_options.slow_mode = Default_conwall_options().slow_mode
+	end
+	if conwall_options.slow_pct == nil then
+		conwall_options.slow_pct = Default_conwall_options().slow_pct
 	end
 end
 
@@ -671,6 +707,8 @@ function Conw_all_options(name, line, wildcards)
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowMode", conwall_options.slow_mode))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowPct", tostring(conwall_options.slow_pct)))
 	elseif wildcards[1] == " SkipEvil" then
 		Note("Changed conwall option:")
 		conwall_options.skip_evil = not conwall_options.skip_evil
@@ -700,6 +738,25 @@ function Conw_all_options(name, line, wildcards)
 		conwall_options.max_level = tonumber(string.match(wildcards[1], " MaxLevel (%-?%d+)"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
 		Show_Window()
+		Save_conwall_options()
+	elseif wildcards[1]:match("SlowMode %a+") then
+		if wildcards[1]:match("SlowMode (%a+)") == "kill" then
+			Note("Changed conwall option:")
+			conwall_options.slow_mode = "kill"
+			ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowMode", conwall_options.slow_mode))
+			Save_conwall_options()
+		elseif wildcards[1]:match("SlowMode (%a+)") == "pct" then
+			Note("Changed conwall option:")
+			conwall_options.slow_mode = "pct"
+			ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowMode", conwall_options.slow_mode))
+			Save_conwall_options()
+		else                                             
+			Note("Unknown conwall SlowMode option "..wildcards[1]:match("SlowMode (%a+)"))
+		end
+	elseif wildcards[1]:match("SlowPct (%d+)") then
+		Note("Changed conwall option:")
+		conwall_options.slow_pct = tonumber(wildcards[1]:match("SlowPct (%d+)"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowPct", tostring(conwall_options.slow_pct)))
 		Save_conwall_options()
 	else
 		Note("Unknown conwall command!")
