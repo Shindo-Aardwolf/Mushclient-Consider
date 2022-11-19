@@ -47,7 +47,7 @@ local conw_on = tonumber(GetVariable("conw_on")) or 1
 local conw_entry = tonumber(GetVariable("conw_entry")) or 1
 local conw_kill = tonumber(GetVariable("conw_kill")) or 1
 local conw_misc = tonumber(GetVariable("conw_misc")) or 1
-local conw_execute_mode = GetVariable("conw_execute_mode") or "skill"
+local conw_execute_mode = GetVariable("conw_execute_mode") ~= nil and GetVariable("conw_execute_mode") or "skill"
 
 local conwall_options = {}
 
@@ -295,10 +295,13 @@ function Conw (name, line, wildcards)
 	if wildcards[1] and wildcards[1]:match("^execute_mode") then
 		local new_mode = string.match(wildcards[1], "^execute_mode (%a+)$")
 		if new_mode == "pro" then
+			conw_execute_mode = "pro"
 			SetVariable("conw_execute_mode", "pro")
 		elseif new_mode == "skill" then
+			conw_execute_mode = "skill"
 			SetVariable("conw_execute_mode", "skill")
 		elseif new_mode == "cast" then
+			conw_execute_mode = "cast"
 			SetVariable("conw_execute_mode", "cast")
 		end
 		Note("Conw execute_mode: ".. GetVariable("conw_execute_mode"))
@@ -1104,8 +1107,7 @@ function OnPluginInstall ()
 	conw_entry = tonumber(GetVariable("conw_entry")) or 1
 	conw_kill = tonumber(GetVariable("conw_kill")) or 1
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
-	conw_execute_mode = GetVariable("conw_execute_mode") or "skill"
-
+	conw_execute_mode = GetVariable("conw_execute_mode") ~= nil and GetVariable("conw_execute_mode") or "skill"
 
 	EnableTriggerGroup ("auto_consider", conw_on)
 	if tonumber(conw_on) == 1 then
@@ -1146,7 +1148,6 @@ function OnPluginDisable ()
 end -- OnPluginDisable
 
 function OnPluginSaveState ()
-
 	SetVariable ("enabled", tostring (GetPluginInfo (GetPluginID (), 17)))
 	SetVariable ("doing_consider", "false")
 	SetVariable ("waiting_for_consider_start", "false")
@@ -1157,6 +1158,5 @@ function OnPluginSaveState ()
 	SetVariable("conw_execute_mode", conw_execute_mode)
 	movewindow.save_state (Win)
 	Save_conwall_options()
-
 end -- OnPluginSaveState
 
