@@ -326,9 +326,9 @@ function Ececute_Mob(command, index)
 	else
 		target = tostring(targT[index].index).. ".'".. targT[index].keyword.. "'"
 	end
-	Execute (command.. " ".. target)
 	ColourTell ("white", "blue", command.. " ".. target)
 	ColourNote ("", "black", " ")
+	Execute (command.. " ".. target)
 end
 
 function Execute_command (id, s)
