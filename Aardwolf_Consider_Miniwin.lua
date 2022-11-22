@@ -153,6 +153,7 @@ function Conw (name, line, wildcards)
 			"conwall options - See current conwall options",
 			"  conwall options SkipEvil - toggle skip Evil mobs",
 			"  conwall options SkipGood - toggle skip Good mobs",
+			"  conwall options SkipNeutral - toggle skip Neutral mobs",
 			"  conwall options SkipSanctuary - toggle skip mobs with Sanctuary",
 			"  conwall options MinLevel <number> - skip mobs with level range lower than this number",
 			"    - For example: conwall options MinLevel -2 - will skips mobs with level range below -2",
@@ -415,6 +416,12 @@ function ShouldSkipMob(mob, show_messages)
 			ColourTell ("white", "blue", "Skipping GOOD ".. mob.keyword.. " ")
 			ColourNote ("", "black", " ")
 		end
+	elseif conwall_options.skip_neutral and not (mob.mflags:match("%(R%)") or mob.mflags:match("%(red aura%)"))
+			and not (mob.mflags:match("%(G%)") or mob.mflags:match("%(golden aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping NEUTRAL ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
 	elseif conwall_options.skip_sanctuary and (mob.mflags:match("%(W%)") or mob.mflags:match("%(white aura%)")) then
 		if show_messages then
 			ColourTell ("white", "blue", "Skipping SANCTUARY ".. mob.keyword.. " ")
@@ -664,6 +671,7 @@ function Default_conwall_options()
 	local default_options = {
 		skip_evil = false,
 		skip_good = false,
+		skip_neutral = false,
 		skip_sanctuary = false,
 		min_level = -2,
 		max_level = 20,
@@ -686,6 +694,9 @@ function Check_conwall_options()
 	if conwall_options.slow_pct == nil then
 		conwall_options.slow_pct = Default_conwall_options().slow_pct
 	end
+	if conwall_options.skip_neutral == nil then
+		conwall_options.skip_neutral = Default_conwall_options().skip_neutral
+	end
 end
 
 function Load_conwall_options()
@@ -707,6 +718,7 @@ function Conw_all_options(name, line, wildcards)
 		Note("Current conwall options:")
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipEvil", conwall_options.skip_evil and "@GYes" or "@RNo"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipNeutral", conwall_options.skip_neutral and "@GYes" or "@RNo"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
@@ -722,6 +734,12 @@ function Conw_all_options(name, line, wildcards)
 		Note("Changed conwall option:")
 		conwall_options.skip_good = not conwall_options.skip_good
 		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		Show_Window()
+		Save_conwall_options()
+	elseif wildcards[1] == " SkipNeutral" then
+		Note("Changed conwall option:")
+		conwall_options.skip_neutral = not conwall_options.skip_neutral
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipNeutral", conwall_options.skip_neutral and "@GYes" or "@RNo"))
 		Show_Window()
 		Save_conwall_options()
 	elseif wildcards[1] == " SkipSanctuary" then
@@ -875,6 +893,7 @@ function Draw_Title ()
 	local misccheck = {"@RM@W", "@GM@W"}
 	local skipevil = {"@GR@W", "@RR@W"}
 	local skipgood = {"@GG@W", "@RG@W"}
+	local skipneut = {"@GN@W", "@RN@W"}
 	local skipsanc = {"@GW@W", "@RW@W"}
 
 	--draw the title and add drag hotspot
@@ -888,6 +907,7 @@ function Draw_Title ()
 		consider_status = "@GON@W "..entrycheck[conw_entry+1]..killcheck[conw_kill+1]..misccheck[conw_misc+1].." "
 				  ..skipevil[(conwall_options.skip_evil and 1 or 0)+1]
 				  ..skipgood[(conwall_options.skip_good and 1 or 0)+1]
+				  ..skipneut[(conwall_options.skip_neutral and 1 or 0)+1]
 				  ..skipsanc[(conwall_options.skip_sanctuary and 1 or 0)+1]
 				  .." "..string.format("%+d", conwall_options.min_level)..".."..string.format("%+d", conwall_options.max_level)
 	else 
@@ -1135,7 +1155,7 @@ function OnPluginInstall ()
 end -- OnPluginInstall
 
 function OnPluginEnable ()
-	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - ON EKM RGW -100..+100")
+	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - ON EKM RGNW -100..+100")
 	Banner_width = Title_width + BORDER_WIDTH * 2 + TEXT_OFFSET * 2
 	Show_Banner ()
 
