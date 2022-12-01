@@ -529,9 +529,9 @@
 	</trigger>
 <!-- triggers to update mobs coming to of leaving the room  -->
 	<trigger
-		enabled="y"
+		enabled="n"
 		group="track_mob_moves"
-		match="^(.+) (?:skulks|swims|flies|hops|leaves) (?:north|south|east|west|up|down).$"
+		match="^(.+) (?:skulks|swims|flies|hops|leaves|glides|jets) (?:north|south|east|west|up|down).$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
@@ -541,9 +541,9 @@
 		>
 	</trigger>
 	<trigger
-		enabled="y"
+		enabled="n"
 		group="track_mob_moves"
-		match="^(.+) (?:skulks|swims|flies|arrives) (?:in )?from the (?:north|south|east|west|above|below).$"
+		match="^(.+) (?:skulks|swims|flies|arrives|glides|jets) (?:in )?from the (?:north|south|east|west|above|below).$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
@@ -553,9 +553,9 @@
 		>
 	</trigger>
 	<trigger
-		enabled="y"
+		enabled="n"
 		group="track_mob_moves"
-		match="^(.+) appears in the room\.$"
+		match="^(?:With a thunderclap, )?(.+) appears in the room\.$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
@@ -565,7 +565,7 @@
 		>
 	</trigger>
 	<trigger
-		enabled="y"
+		enabled="n"
 		group="track_mob_moves"
 		match="^(.+) has fled!$"
 		omit_from_output="n"
