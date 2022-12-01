@@ -48,6 +48,7 @@ local conw_entry = tonumber(GetVariable("conw_entry")) or 1
 local conw_kill = tonumber(GetVariable("conw_kill")) or 1
 local conw_misc = tonumber(GetVariable("conw_misc")) or 1
 local conw_execute_mode = GetVariable("conw_execute_mode") ~= nil and GetVariable("conw_execute_mode") or "skill"
+local conw_ignore_area = GetVariable("conw_ignore_area") ~=nil and GetVariable("conw_ignore_area") or ""
 
 local conwall_options = {}
 
@@ -138,6 +139,8 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
+			"conw IgnoreArea - set or clear area name to ignore for conw",
+			"  - For example: conw IgnoreArea bootcamp - will skip auto sending consider command in Boot Training Grounds area",
 			"conw execute_mode [skill|cast|pro] - shows or sets how target keywords are passed to execute command",
 			"  - MUD server behaves differently when processing multiple keywords target for spells/skills.",
 			"  conw execute_mode skill - execute sends target as <num>.'keyword1 keyword2...'",
@@ -311,9 +314,22 @@ function Conw (name, line, wildcards)
 		end
 		Note("Conw execute_mode: ".. GetVariable("conw_execute_mode"))
 	end
+
+	if wildcards[1] and wildcards[1]:match("^IgnoreArea") then
+		local zone = string.match(wildcards[1], "^IgnoreArea (.*)$")
+		conw_ignore_area = zone ~= nil and zone or ""
+		SetVariable("conw_ignore_area", conw_ignore_area)
+		Note("Conw IgnoreArea: ".. GetVariable("conw_ignore_area"))
+	end
 end -- Conw
 
 function Send_consider ()
+	if conw_ignore_area ~= "" then
+		local zone = gmcp("room.info.zone")
+		if zone == conw_ignore_area then
+			return
+		end
+	end
 	if GetVariable("doing_consider") == "true" or GetVariable("doing_conwallslow") == "true" then
 		return
 	else
@@ -1132,6 +1148,7 @@ function OnPluginInstall ()
 	conw_kill = tonumber(GetVariable("conw_kill")) or 1
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
 	conw_execute_mode = GetVariable("conw_execute_mode") ~= nil and GetVariable("conw_execute_mode") or "skill"
+	conw_ignore_area = GetVariable("conw_ignore_area") ~= nil and GetVariable("conw_ignore_area") or "bootcamp"
 
 	EnableTriggerGroup ("auto_consider", conw_on)
 	if tonumber(conw_on) == 1 then
@@ -1182,6 +1199,7 @@ function OnPluginSaveState ()
 	SetVariable("conw_entry", conw_entry)
 	SetVariable("conw_on", conw_on)
 	SetVariable("conw_execute_mode", conw_execute_mode)
+	SetVariable("conw_ignore_area", conw_ignore_area)
 	movewindow.save_state (Win)
 	Save_conwall_options()
 end -- OnPluginSaveState
