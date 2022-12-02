@@ -531,7 +531,7 @@
 	<trigger
 		enabled="n"
 		group="track_mob_moves"
-		match="^(.+) (?:skulks|swims|flies|hops|leaves|glides|jets) (?:north|south|east|west|up|down).$"
+		match="^(.+) (?:skulks|swims|flies|hops|leaves|glides|jets|walks) (?:north|south|east|west|up|down).$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
@@ -543,7 +543,7 @@
 	<trigger
 		enabled="n"
 		group="track_mob_moves"
-		match="^(.+) (?:skulks|swims|flies|arrives|glides|jets) (?:in )?from the (?:north|south|east|west|above|below).$"
+		match="^(.+) (?:skulks|swims|flies|arrives|glides|jets|walks) (?:in )?from the (?:north|south|east|west|above|below).$"
 		omit_from_output="n"
 		keep_evaluating="y"
 		regexp="y"
