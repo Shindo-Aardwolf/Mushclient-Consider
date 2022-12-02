@@ -1185,23 +1185,25 @@ function OnPluginInstall ()
 		return
 	end -- they didn't enable us last time
 
-	Load_conwall_options()
-
 	OnPluginEnable ()
-
 end -- OnPluginInstall
 
 function OnPluginEnable ()
+	Load_conwall_options()
 	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - ON EKM RGNW -100..+100")
 	Banner_width = Title_width + BORDER_WIDTH * 2 + TEXT_OFFSET * 2
 	Show_Banner ()
-
 end -- OnPluginEnable
 
+function OnPluginConnect()
+	Load_conwall_options()
+	SetVariable("doing_consider", "false")
+	SetVariable("waiting_for_consider_start", "false")
+	SetVariable("doing_conwallslow", "false")
+end
+
 function OnPluginDisable ()
-
 	WindowShow (Win, false)
-
 end -- OnPluginDisable
 
 function OnPluginSaveState ()
