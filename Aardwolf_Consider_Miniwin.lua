@@ -293,13 +293,6 @@ function Conw (name, line, wildcards)
 		return
 	end
 
-	if wildcards[1] and wildcards[1]:match ("^%w+$") then
-		SetVariable ("default_command", wildcards[1])
-		default_command = GetVariable ("default_command")
-		ColourTell ("white", "blue", "Default command: ".. wildcards[1])
-		ColourNote ("", "black", " ")
-	end
-
 	if wildcards[1] and wildcards[1]:match("^execute_mode") then
 		local new_mode = string.match(wildcards[1], "^execute_mode (%a+)$")
 		if new_mode == "pro" then
@@ -313,13 +306,16 @@ function Conw (name, line, wildcards)
 			SetVariable("conw_execute_mode", "cast")
 		end
 		Note("Conw execute_mode: ".. GetVariable("conw_execute_mode"))
-	end
-
-	if wildcards[1] and wildcards[1]:match("^IgnoreArea") then
+	elseif wildcards[1] and wildcards[1]:match("^IgnoreArea") then
 		local zone = string.match(wildcards[1], "^IgnoreArea (.*)$")
 		conw_ignore_area = zone ~= nil and zone or ""
 		SetVariable("conw_ignore_area", conw_ignore_area)
 		Note("Conw IgnoreArea: ".. GetVariable("conw_ignore_area"))
+	elseif wildcards[1] and wildcards[1]:match ("^%w+$") then
+		SetVariable ("default_command", wildcards[1])
+		default_command = GetVariable ("default_command")
+		ColourTell ("white", "blue", "Default command: ".. wildcards[1])
+		ColourNote ("", "black", " ")
 	end
 end -- Conw
 
@@ -327,6 +323,24 @@ function Send_consider ()
 	if conw_ignore_area ~= "" then
 		local zone = gmcp("room.info.zone")
 		if zone == conw_ignore_area then
+			targT = {}
+			local t = {
+				keyword = "",
+				index   = 1,
+				name    = "Ignoring zone ".. zone,
+				mflags  = "",
+				line    = "",
+				colour  = "gray",
+				range   = "",
+				message = "",
+				dead    = false,
+				attacked = false,
+				aimed   = false,
+				left    = false,
+				came    = false,
+			}
+			table.insert(targT, t)
+			Show_Window()
 			return
 		end
 	end
