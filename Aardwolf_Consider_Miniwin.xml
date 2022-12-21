@@ -24,6 +24,12 @@
 	* Added a trigger for safe rooms (omit only)
 	* Added suggestion on install for the help command 'conw ?'
 -->
+<!-- Updates by Athlau 2022
+	* Added support for custom keywords from Crowley's version of S&D
+	* Added cownall command
+	* Fixed triggers enable on plugin load
+	* Strikeout killed mobs in the consider window
+-->
 <muclient>
 	<plugin
 		name="Aardwolf_Consider_Window"
@@ -63,7 +69,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "chartreuse"
-			mob_range = "-2 to -6"</send>
+			mob_range = "-2 to -4"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -91,7 +97,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "springgreen"
-			mob_range = "-2 to +2"</send>
+			mob_range = "-1 to +1"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -105,7 +111,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "darkgoldenrod"
-			mob_range = "+2 to +3"</send>
+			mob_range = "+2 to +4"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -161,7 +167,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "tomato"
-			mob_range = "+8 to +16"</send>
+			mob_range = "+10 to +15"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -175,7 +181,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "crimson"
-			mob_range = "+16 to +21"</send>
+			mob_range = "+16 to +20"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -189,7 +195,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "forestgreen"
-			mob_range = "-6 to -9"</send>
+			mob_range = "-5 to -9"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -203,7 +209,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "magenta"
-			mob_range = "+50 and above"</send>
+			mob_range = "+51 and above"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -217,7 +223,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "gray"
-			mob_range = "-19 and below"</send>
+			mob_range = "-20 and below"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -231,7 +237,7 @@
 		send_to="12"
 		>
 		<send>mob_color = "gold"
-			mob_range = "+3 to +8"</send>
+			mob_range = "+5 to +9"</send>
 	</trigger>
 	<trigger
 		enabled="n"
@@ -310,7 +316,7 @@
 		omit_from_output="y"
 		keep_evaluating="n"
 		regexp="y"
-		script="Show_Window"
+		script="Consider_end"
 		send_to="12"
 		sequence="1"
 		>
@@ -337,6 +343,18 @@
 		regexp="y"
 		script="Send_consider"
 		send_to="12"
+		sequence="2"
+		>
+	</trigger>
+	<trigger
+		enabled="y"
+		group="auto_consider_misc"
+		match="^.+ has fled!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Send_consider"
+		send_to="12"
 		sequence="1"
 		>
 	</trigger>
@@ -354,18 +372,6 @@
 	</trigger>
 	<trigger
 		enabled="n"
-		group="auto_consider_misc"
-		match="^.+ has fled!$"
-		omit_from_output="n"
-		keep_evaluating="y"
-		regexp="y"
-		script="Send_consider"
-		send_to="12"
-		sequence="1"
-		>
-	</trigger>
-	<trigger
-		enabled="n"
 		group="auto_consider_on_entry"
 		match="^\[ Exits"
 		omit_from_output="n"
@@ -373,10 +379,228 @@
 		regexp="y"
 		script="Send_consider"
 		send_to="12"
+		sequence="2"
+		>
+	</trigger>
+<!-- triggers to update killed mobs  -->
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) \w+ is DEAD!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="2"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) is DEAD!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
 		sequence="1"
 		>
 	</trigger>
-
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) falls dead as \w+ mind is destroyed!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^The voice of god has cleansed (.*) eternally! \w+ is DEAD!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^The mind force crushes (.*) into a bloody pulp! \w+ is DEAD!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) screams in agony as the acid consumes it!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) is damned forever by the holy power!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) screams as the flames engulf \w+!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) is battered to death by the force of the water!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) crumbles as \w+ is battered to death!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) is slain by a final .*!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="auto_track_kills"
+		match="^(.*) is slain by a final .*!!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_kill"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+<!-- triggers to update mobs coming to of leaving the room  -->
+	<trigger
+		enabled="n"
+		group="track_mob_moves"
+		match="^(.+) (?:skulks|swims|flies|hops|leaves|glides|jets|walks) (?:north|south|east|west|up|down).$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_left"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="track_mob_moves"
+		match="^(.+) (?:skulks|swims|flies|arrives|glides|jets|walks) (?:in )?from the (?:north|south|east|west|above|below).$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_came"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="track_mob_moves"
+		match="^(?:With a thunderclap, )?(.+) appears in the room\.$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_came"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="n"
+		group="track_mob_moves"
+		match="^(.+) has fled!$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Update_mob_left"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+<!-- conwallslow triggers -->
+	<trigger
+		enabled="y"
+		group="conwallslow"
+		match="^\[ Exits"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Cancel_conwallslow"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
+	<trigger
+		enabled="y"
+		group="conwallslow"
+		match="^They aren't here\.$"
+		omit_from_output="n"
+		keep_evaluating="y"
+		regexp="y"
+		script="Conw_all_slow_next"
+		send_to="12"
+		sequence="1"
+		>
+	</trigger>
 </triggers>
 <!-- Aliases -->
 <aliases>
@@ -410,6 +634,45 @@
 		sequence="1"
 		>
 	</alias>
+	<alias
+		script="Conw_all"
+		match="^conwall$"
+		keep_evaluating="y"
+		enabled="y"
+		regexp="y"
+		send_to="12"
+		sequence="99"
+		>
+	</alias>
+	<alias
+		script="Conw_all_slow"
+		match="^conwallslow$"
+		keep_evaluating="y"
+		enabled="y"
+		regexp="y"
+		send_to="12"
+		sequence="99"
+		>
+	</alias>
+	<alias
+		script="Conw_all_options"
+		match="^conwall options(.*)$"
+		keep_evaluating="y"
+		enabled="y"
+		regexp="y"
+		send_to="12"
+		sequence="99"
+		>
+	</alias>
+	<alias
+		script="Notify_Attack"
+		match="conw_notify_attack *"
+		enabled="y"
+		send_to="12"
+		sequence="100"
+	>
+  </alias>
+
 </aliases>
 <!--  Script  -->
 <script>

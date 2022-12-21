@@ -40,19 +40,26 @@ require "aard_register_z_on_create"
 require "mw_theme_base"
 require "movewindow"
 require "gmcphelper"
+require "var"
 
 --consider flags
 local conw_on = tonumber(GetVariable("conw_on")) or 1
 local conw_entry = tonumber(GetVariable("conw_entry")) or 1
 local conw_kill = tonumber(GetVariable("conw_kill")) or 1
 local conw_misc = tonumber(GetVariable("conw_misc")) or 1
+local conw_execute_mode = GetVariable("conw_execute_mode") ~= nil and GetVariable("conw_execute_mode") or "skill"
+local conw_ignore_area = GetVariable("conw_ignore_area") ~=nil and GetVariable("conw_ignore_area") or ""
+
+local conwall_options = {}
 
 local search_destroy_id = "e50b1d08a0cfc0ee9c442001"
+local search_destroy_crowley_id = "30000000537461726c696e67"
 
 local banner_height = 0
 local currentState = -1
 local keyword_position = GetVariable("keyword_position") or "endw"
 local default_command
+local conwall_slow_skip_next_death = false
 
 local targT = {}
 
@@ -84,7 +91,16 @@ function OnPluginBroadcast (msg, id, name, text)
 			luastmt = "gmcpdata = " .. gmcparg
 			assert (loadstring (luastmt or "")) ()
 			currentState = tonumber(gmcpval("status.state"))
-			--			DebugNote("char.status.state : " ..currentState)
+			Update_Current_Target()
+
+			if GetVariable("doing_conwallslow") == "true" and conwall_options.slow_mode == "pct" then
+				local pct = tonumber(gmcp("char.status.enemypct")) or 100
+				if not conwall_slow_skip_next_death and pct <= conwall_options.slow_pct then
+					conwall_slow_skip_next_death = true
+					Conw_all_slow()
+				end
+			end
+--			DebugNote("char.status.state : " ..currentState)
 
 		end
 	end
@@ -123,7 +139,39 @@ function Conw (name, line, wildcards)
 			"<num> <word> - Execute <word> with keyword from line <num> on consider window.",
 			"<num> - Execute with default word.",
 			"conw <word> - set default command.",
-			--			"conw chng - swop keyword from beginning of name to end of name or vice-versa.",
+			"conw IgnoreArea - set or clear area name to ignore for conw",
+			"  - For example: conw IgnoreArea bootcamp - will skip auto sending consider command in Boot Training Grounds area",
+			"conw execute_mode [skill|cast|pro] - shows or sets how target keywords are passed to execute command",
+			"  - MUD server behaves differently when processing multiple keywords target for spells/skills.",
+			"  conw execute_mode skill - execute sends target as <num>.'keyword1 keyword2...'",
+			"  conw execute_mode cast - execute sends target as '<num>.keyword1 keyword2...'",
+			"  conw execute_mode pro - execute sends target as separate arguments without quotes, starting with <num> always.",
+			"  - An example for a 4th mob called 'Strong guard':",
+			"    skill - 4.'strong guard', use directly with skills or aliases like backstab* => backstab %1",
+			"    spell - '4.strong guard', use directly with spells or aliases like mm* => cast 'magic missile' %1",
+			"    pro   - 4 strong guard, use if you know what you're doing.",
+			"  - Note: target number is always present i.e.: 1 strong guard",
+			"conwall - Execute all targets matching selected options with default word.",
+                        "conwallslow - Execute all targets without stacking (executes next after kill)",
+			"conwall options - See current conwall options",
+			"  conwall options SkipEvil - toggle skip Evil mobs",
+			"  conwall options SkipGood - toggle skip Good mobs",
+			"  conwall options SkipNeutral - toggle skip Neutral mobs",
+			"  conwall options SkipSanctuary - toggle skip mobs with Sanctuary",
+			"  conwall options MinLevel <number> - skip mobs with level range lower than this number",
+			"    - For example: conwall options MinLevel -2 - will skips mobs with level range below -2",
+			"  conwall options MaxLevel <number> - skip mobs with level range higher than this number",
+			"    - For example: conwall options MaxLevel 21 - will skips mobs with level range above +21",
+			"  conwall options SlowMode <kill|pct> - send next target execute command after <kill> or when",
+			"    - current target HP% <= set percentage.",
+			"  conwall options SlowPct <num> - sets percentage for 'SlowMode pct'",
+			"    -  'SlowMode pct' allows you to bleed your attacks/spells to next target in the combat round",
+			"    -  where current target dies. Increases your XP rate a bit.",
+			"conw_notify_attack <target> - use this alias if you're attacking mob via other commands but",
+			"    - want consider window to draw attack mark on that mob.",
+			"    - For example when using S&D's kk to attack do the following:",
+			"    - xset qk my_uber_attack_alias",
+			"    - and have the above alias expand to conw_notify_attack %1;;kill %1",
 			"conw auto|on|off - toggle auto update consider window on room entry and after combat.",
 			"conw misc|entry|kill - toggle consider on room entry, mob kill or miscellanous stuff",
 			"conw flags - toggle showing of flags on and off.",
@@ -143,6 +191,8 @@ function Conw (name, line, wildcards)
 			EnableTriggerGroup ("auto_consider_on_entry", 0)
 			EnableTriggerGroup ("auto_consider_on_kill", 0)
 			EnableTriggerGroup ("auto_consider_misc", 0)
+			EnableTriggerGroup ("auto_track_kills", 0)
+			EnableTriggerGroup ("track_mob_moves", 0)
 			ColourTell ("white", "blue", "Auto consider off.")
 			ColourNote ("", "black", " ")
 		else
@@ -150,6 +200,8 @@ function Conw (name, line, wildcards)
 			EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 			EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 			EnableTriggerGroup ("auto_consider_misc", conw_misc)
+			EnableTriggerGroup ("auto_track_kills", 1)
+			EnableTriggerGroup ("track_mob_moves", 1)
 			ColourTell ("white", "blue", "Auto consider on.")
 			ColourNote ("", "black", " ")
 		end
@@ -162,6 +214,8 @@ function Conw (name, line, wildcards)
 		EnableTriggerGroup ("auto_consider_on_kill", 0)
 		EnableTriggerGroup ("auto_consider_on_entry", 0)
 		EnableTriggerGroup ("auto_consider_misc", 0)
+		EnableTriggerGroup ("auto_track_kills", 0)
+		EnableTriggerGroup ("track_mob_moves", 0)
 		ColourTell ("white", "blue", "Auto consider off.")
 		ColourNote ("", "black", " ")
 		Show_Window()
@@ -173,6 +227,8 @@ function Conw (name, line, wildcards)
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 		EnableTriggerGroup ("auto_consider_misc", conw_misc)
+		EnableTriggerGroup ("auto_track_kills", 1)
+		EnableTriggerGroup ("track_mob_moves", 1)
 		ColourTell ("white", "blue", "Auto consider on.")
 		ColourNote ("", "black", " ")
 		Show_Window()
@@ -237,46 +293,97 @@ function Conw (name, line, wildcards)
 		return
 	end
 
-	if wildcards[1] and wildcards[1]:match ("^%w+$") then
+	if wildcards[1] and wildcards[1]:match("^execute_mode") then
+		local new_mode = string.match(wildcards[1], "^execute_mode (%a+)$")
+		if new_mode == "pro" then
+			conw_execute_mode = "pro"
+			SetVariable("conw_execute_mode", "pro")
+		elseif new_mode == "skill" then
+			conw_execute_mode = "skill"
+			SetVariable("conw_execute_mode", "skill")
+		elseif new_mode == "cast" then
+			conw_execute_mode = "cast"
+			SetVariable("conw_execute_mode", "cast")
+		end
+		Note("Conw execute_mode: ".. GetVariable("conw_execute_mode"))
+	elseif wildcards[1] and wildcards[1]:match("^IgnoreArea") then
+		local zone = string.match(wildcards[1], "^IgnoreArea (.*)$")
+		conw_ignore_area = zone ~= nil and zone or ""
+		SetVariable("conw_ignore_area", conw_ignore_area)
+		Note("Conw IgnoreArea: ".. GetVariable("conw_ignore_area"))
+	elseif wildcards[1] and wildcards[1]:match ("^%w+$") then
 		SetVariable ("default_command", wildcards[1])
 		default_command = GetVariable ("default_command")
 		ColourTell ("white", "blue", "Default command: ".. wildcards[1])
 		ColourNote ("", "black", " ")
 	end
-
-end -- Send_consider
+end -- Conw
 
 function Send_consider ()
-
-	if GetVariable ("doing_consider") == "true" then
+	if conw_ignore_area ~= "" then
+		local zone = gmcp("room.info.zone")
+		if zone == conw_ignore_area then
+			targT = {}
+			local t = {
+				keyword = "",
+				index   = 1,
+				name    = "Ignoring zone ".. zone,
+				mflags  = "",
+				line    = "",
+				colour  = "gray",
+				range   = "",
+				message = "",
+				dead    = false,
+				attacked = false,
+				aimed   = false,
+				left    = false,
+				came    = false,
+			}
+			table.insert(targT, t)
+			Show_Window()
+			return
+		end
+	end
+	if GetVariable("doing_consider") == "true" or GetVariable("doing_conwallslow") == "true" then
 		return
 	else
 		SetVariable ("doing_consider", "true")
+		SetVariable ("waiting_for_consider_start", "true")
 		EnableTriggerGroup ("consider", true)
 		SendNoEcho ("consider all")
 		SendNoEcho ("echo nhm")
-		targT = {}
 	end
-
 end -- Send_consider
 
-function Execute_command (id, s)
+function Ececute_Mob(command, index)
+	local target
+	if GetVariable("conw_execute_mode") == "pro" then
+		target = tostring(targT[index].index).. " ".. targT[index].keyword
+	elseif GetVariable("conw_execute_mode") == "cast" then
+		target = "'".. tostring(targT[index].index).. ".".. targT[index].keyword.. "'"
+	else
+		target = tostring(targT[index].index).. ".'".. targT[index].keyword.. "'"
+	end
+	ColourTell ("white", "blue", command.. " ".. target)
+	ColourNote ("", "black", " ")
+	Execute (command.. " ".. target)
+end
 
+function Execute_command (id, s)
 	if not s then
 		return
 	end
-
 	s = s:match ("^([%d.%w' ]+)%:%d+$")
 	Execute (default_command.. " ".. s)
 	ColourTell ("white", "blue", default_command.. " ".. s)
 	ColourNote ("", "black", " ")
-
 end -- Execute_command
 
 function Command_line (name, line, wildcards)
 	local iNum = tonumber (wildcards[1])
 	local sKey = ""
 
+	SetVariable("doing_conwallslow", "false")
 	if iNum > #targT then
 		return
 	end
@@ -288,15 +395,428 @@ function Command_line (name, line, wildcards)
 	end
 
 	if targT[iNum] then
-		Execute (sKey.. " ".. targT[iNum].keyword)
-		ColourTell ("white", "blue", sKey.. " ".. targT[iNum].keyword.. " ")
-		ColourNote ("", "black", " ")
+		targT[iNum].attacked = true
+		Ececute_Mob(sKey, iNum)
 	else
 		ColourTell ("white", "blue", "no target in targT ")
 		ColourNote ("", "black", " ")
 	end
 
 end -- Command_line
+
+function ShouldSkipMob(mob, show_messages)
+	local minlevel, maxlevel = string.match(mob.range, "([+-]?%d+) to ([+-]?%d+)")
+	if not minlevel or not maxlevel then
+		if string.match(mob.range, "%-20 and below") then
+			minlevel = -300
+			maxlevel = -20
+		elseif string.match(mob.range, "%+51 and above") then
+			minlevel = 50
+			maxlevel = 300
+		else
+			minlevel = -300
+			maxlevel = 300
+		end
+	else
+		minlevel = tonumber(minlevel)
+		maxlevel = tonumber(maxlevel)
+		if minlevel > maxlevel then
+			minlevel, maxlevel = maxlevel, minlevel
+		end
+	end
+
+	if mob.left or mob.came then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping moved ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif mob.attacked then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping already attacked ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif mob.dead then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping already dead ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_evil and (mob.mflags:match("%(R%)") or mob.mflags:match("%(red aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping EVIL ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_good and (mob.mflags:match("%(G%)") or mob.mflags:match("%(golden aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping GOOD ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_neutral and not (mob.mflags:match("%(R%)") or mob.mflags:match("%(red aura%)"))
+			and not (mob.mflags:match("%(G%)") or mob.mflags:match("%(golden aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping NEUTRAL ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif conwall_options.skip_sanctuary and (mob.mflags:match("%(W%)") or mob.mflags:match("%(white aura%)")) then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping SANCTUARY ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	elseif minlevel < conwall_options.min_level or maxlevel > conwall_options.max_level then
+		if show_messages then
+			ColourTell ("white", "blue", "Skipping out of level range ".. mob.keyword.. " ")
+			ColourNote ("", "black", " ")
+		end
+	else
+		return false
+	end
+	return true
+end
+
+function Conw_all(name, line, wildcards)
+	SetVariable("doing_conwallslow", "false")
+
+	if #targT == 0 then
+		ColourTell ("white", "blue", "no targets to conwall")
+		ColourNote ("", "black", " ")
+	end
+
+	for i = #targT, 1, -1 do
+		if not ShouldSkipMob(targT[i], true) then
+			targT[i].attacked = true
+			Ececute_Mob(default_command, i)
+		end
+	end
+	Show_Window()
+end -- Conw_all
+
+function Conw_all_slow(name, line, wildcards)
+	if #targT == 0 then
+		ColourTell ("white", "blue", "no targets to conwallslow")
+		ColourNote ("", "black", " ")
+		conwall_slow_skip_next_death = false
+	end
+	local found = false
+	for i = #targT, 1, -1 do
+		if not ShouldSkipMob(targT[i], false) then
+			targT[i].attacked = true
+			SetVariable("doing_conwallslow", "true")
+			found = true
+			Ececute_Mob(default_command, i)
+			break
+		end
+	end
+	if not found then
+		ColourTell ("white", "blue", "no targets to conwallslow")
+		ColourNote ("", "black", " ")
+		if GetVariable("doing_conwallslow") == "true" then
+			SetVariable("doing_conwallslow", "false")
+			conwall_slow_skip_next_death = false
+			Send_consider()
+		end
+	end
+	Show_Window()
+end
+
+function Conw_all_slow_next(name, line, wildcards)
+	if GetVariable("doing_conwallslow") == "true" then
+		Conw_all_slow()
+	end
+end
+
+function Cancel_conwallslow(name, line, wildcards)
+	SetVariable("doing_conwallslow", "false")
+end
+
+function Update_kill(name, line, wildcards)
+	--Note("KILL!!!!! ["..wildcards[1].."]")
+
+	local trigger_name = wildcards[1]:gsub("^%u", string.lower)
+
+	--Try to find attacked mob first in case there're difference align or level mobs with the same name
+	for i = #targT, 1, -1 do
+		--Lower case first character as it's done in some death messages like kills with "project force" etc.
+		local list_name = targT[i].name:gsub("^%u", string.lower)
+		if targT[i].attacked and not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
+			targT[i].dead = true
+			targT[i].mflags = " dead "
+			targT[i].pct = 0
+			Update_mobs_indicies(i+1)
+			Show_Window()
+			if GetVariable("doing_conwallslow") == "true" then
+				if conwall_slow_skip_next_death then
+					conwall_slow_skip_next_death = false
+				else
+					Conw_all_slow()
+				end
+			end
+			return
+		end
+	end
+
+	--Fallback to check any mob with given name
+	for i = #targT, 1, -1 do
+		local list_name = targT[i].name:gsub("^%u", string.lower)
+		if not targT[i].dead and (trigger_name:sub(1, #targT[i].name) == list_name) then
+			targT[i].dead = true
+			targT[i].mflags = " dead "
+			targT[i].pct = 0
+			Update_mobs_indicies(i+1)
+			Show_Window()
+			if GetVariable("doing_conwallslow") == "true" then
+				if conwall_slow_skip_next_death then
+					conwall_slow_skip_next_death = false
+				else
+					Conw_all_slow()
+				end
+			end
+			return
+		end
+	end
+
+	if GetVariable("doing_conwallslow") == "true" then
+		if conwall_slow_skip_next_death then
+			conwall_slow_skip_next_death = false
+		else
+			Conw_all_slow()
+		end
+	end
+end
+
+function Update_mobs_indicies(from)
+	for i = #targT, from, -1 do
+		local count = 1
+		for j = i - 1, 1, -1 do
+			if targT[i].name == targT[j].name and not (targT[j].dead or targT[j].left) then
+				count = count + 1
+			end
+		end
+		targT[i].index = count
+	end
+end
+
+function Update_mob_came(name, line, wildcards)
+	--Note("CAME!!!!! ["..wildcards[1].."]")
+
+	local mob = wildcards[1]
+	if mob == nil then
+		return
+	end
+	local flags = SHOW_FLAGS and " came " or "      "
+
+	local t = {
+		keyword = GetKeyword(mob),
+		index   = 1,
+		name    = mob,
+		mflags  = flags,
+		line    = line,
+		colour  = "gray",
+		range   = "(???)",
+		message = line,
+		dead    = false,
+		attacked = false,
+		aimed   = false,
+		left    = false,
+		came    = true,
+	}
+	table.insert (targT, 1, t)
+	Update_mobs_indicies(2)
+	Show_Window()
+end
+
+function Update_mob_left(name, line, wildcards)
+	--Note("LEFT!!!!! ["..wildcards[1].."]")
+
+	local mob = wildcards[1]
+	if mob == nil then
+		return
+	end
+	local flags = SHOW_FLAGS and " left " or "      "
+
+	--Try to find alive not attacked mob first in case there're difference mobs with the same name
+	for i = #targT, 1, -1 do
+		if not targT[i].attacked and not targT[i].dead and not targT[i].left and targT[i].name == mob then
+			targT[i].left = true
+			targT[i].mflags = flags
+			Update_mobs_indicies(i)
+			Show_Window()
+			return
+		end
+	end
+
+	--Fallback to check any mob with given name
+	for i = #targT, 1, -1 do
+		if not targT[i].dead and not targT[i].left and targT[i].name == mob then
+			targT[i].left = true
+			targT[i].mflags = flags
+			Update_mobs_indicies(i)
+			Show_Window()
+			break
+		end
+	end
+end
+
+-- Call this if you're attacking mob yourself but still want a nice "x" mark in the window to appear.
+function Notify_Attack(name, line, wildcards)
+	local mob = wildcards[1]
+	local mob_num = tonumber(mob:match("^'?(%d+)%.")) or 1
+	local mob_stripped = mob:gsub("^'?%d*%.?'?", ""):gsub("'$","")
+	local found = false
+	for i = #targT, 1, -1 do
+		if targT[i].index == mob_num and targT[i].keyword == mob_stripped then
+			targT[i].attacked = true
+			Show_Window()
+			found = true
+			break
+		end
+
+		--S&D have random() calls when deciding how many characters to use from each of word of mob keywords...
+		--see if all words in attack command and mob kws are substrings of one another
+		--Check if mob and target numbers match first, then compare the words
+		if mob_num == targT[i].index then
+			local target_stripped = targT[i].keyword
+			local targ_words = target_stripped:lower():gmatch("%S+")
+			local match = true
+			for word in mob_stripped:lower():gmatch("%S+") do
+				local target = targ_words()
+				if target==nil or not (word:sub(1, #target) == target or target:sub(1, #word) == word) then
+					match = false
+					break
+				end
+			end
+			if match and targ_words() == nil then
+				targT[i].attacked = true
+				Show_Window()
+				found = true
+				break
+			end
+		end
+	end
+
+	if not found then
+		Note("can't find target: "..mob)
+		Note("mobs in room:")
+		for i = #targT, 1, -1 do
+			Note(tostring(i)..". "..tostring(targT[i].index).. " ".. targT[i].keyword)
+		end
+	end
+end
+
+function Default_conwall_options()
+	local default_options = {
+		skip_evil = false,
+		skip_good = false,
+		skip_neutral = false,
+		skip_sanctuary = false,
+		min_level = -2,
+		max_level = 20,
+		slow_mode = "pct",
+		slow_pct = 20,
+	}
+	return default_options
+end
+
+function Check_conwall_options()
+	if conwall_options.min_level == nil then
+		conwall_options.min_level = Default_conwall_options().min_level
+	end
+	if conwall_options.max_level == nil then
+		conwall_options.max_level = Default_conwall_options().max_level
+	end
+	if conwall_options.slow_mode == nil then
+		conwall_options.slow_mode = Default_conwall_options().slow_mode
+	end
+	if conwall_options.slow_pct == nil then
+		conwall_options.slow_pct = Default_conwall_options().slow_pct
+	end
+	if conwall_options.skip_neutral == nil then
+		conwall_options.skip_neutral = Default_conwall_options().skip_neutral
+	end
+end
+
+function Load_conwall_options()
+	conwall_options = loadstring(string.format("return %s", var.config or serialize.save_simple(Default_conwall_options())))()
+	Check_conwall_options()
+	Save_conwall_options()
+end
+
+function Save_conwall_options()
+	var.config = serialize.save_simple(conwall_options)
+end
+
+function ShowNote(str)
+	AnsiNote(stylesToANSI(ColoursToStyles(string.format("@w%s@w", str))))
+end
+
+function Conw_all_options(name, line, wildcards)
+	if wildcards[1] == "" then
+		Note("Current conwall options:")
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipEvil", conwall_options.skip_evil and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipNeutral", conwall_options.skip_neutral and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowMode", conwall_options.slow_mode))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowPct", tostring(conwall_options.slow_pct)))
+	elseif wildcards[1] == " SkipEvil" then
+		Note("Changed conwall option:")
+		conwall_options.skip_evil = not conwall_options.skip_evil
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipEvil", conwall_options.skip_evil and "@GYes" or "@RNo"))
+		Show_Window()
+		Save_conwall_options()
+	elseif wildcards[1] == " SkipGood" then
+		Note("Changed conwall option:")
+		conwall_options.skip_good = not conwall_options.skip_good
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipGood", conwall_options.skip_good and "@GYes" or "@RNo"))
+		Show_Window()
+		Save_conwall_options()
+	elseif wildcards[1] == " SkipNeutral" then
+		Note("Changed conwall option:")
+		conwall_options.skip_neutral = not conwall_options.skip_neutral
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipNeutral", conwall_options.skip_neutral and "@GYes" or "@RNo"))
+		Show_Window()
+		Save_conwall_options()
+	elseif wildcards[1] == " SkipSanctuary" then
+		Note("Changed conwall option:")
+		conwall_options.skip_sanctuary = not conwall_options.skip_sanctuary
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SkipSanctuary", conwall_options.skip_sanctuary and "@GYes" or "@RNo"))
+		Show_Window()
+		Save_conwall_options()
+	elseif string.match(wildcards[1], " MinLevel %-?%d+") then
+		Note("Changed conwall option:")
+		conwall_options.min_level = tonumber(string.match(wildcards[1], " MinLevel (%-?%d+)"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MinLevel", tostring(conwall_options.min_level)))
+		Show_Window()
+		Save_conwall_options()
+	elseif string.match(wildcards[1], " MaxLevel %-?%d+") then
+		Note("Changed conwall option:")
+		conwall_options.max_level = tonumber(string.match(wildcards[1], " MaxLevel (%-?%d+)"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "MaxLevel", tostring(conwall_options.max_level)))
+		Show_Window()
+		Save_conwall_options()
+	elseif wildcards[1]:match("SlowMode %a+") then
+		if wildcards[1]:match("SlowMode (%a+)") == "kill" then
+			Note("Changed conwall option:")
+			conwall_options.slow_mode = "kill"
+			ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowMode", conwall_options.slow_mode))
+			Save_conwall_options()
+		elseif wildcards[1]:match("SlowMode (%a+)") == "pct" then
+			Note("Changed conwall option:")
+			conwall_options.slow_mode = "pct"
+			ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowMode", conwall_options.slow_mode))
+			Save_conwall_options()
+		else                                             
+			Note("Unknown conwall SlowMode option "..wildcards[1]:match("SlowMode (%a+)"))
+		end
+	elseif wildcards[1]:match("SlowPct (%d+)") then
+		Note("Changed conwall option:")
+		conwall_options.slow_pct = tonumber(wildcards[1]:match("SlowPct (%d+)"))
+		ShowNote(string.format("  @Y%-13.13s @w(%-3.5s@w)", "SlowPct", tostring(conwall_options.slow_pct)))
+		Save_conwall_options()
+	else
+		Note("Unknown conwall command!")
+	end
+end
 
 function GetKeyword(mob)
 	local nameCount = 1
@@ -308,16 +828,23 @@ function GetKeyword(mob)
 
 	if (GetPluginInfo(search_destroy_id, 17)) then
 		local gmcproomdata = gmcp("room")
-		_, mob, _ = CallPlugin( search_destroy_id, "IGuessMobNameBroadcast", mob, gmcproomdata.info.zone) 
+		if gmcproomdata ~= nil and gmcproomdata.info ~= nil then
+			_, mob, _ = CallPlugin( search_destroy_id, "IGuessMobNameBroadcast", mob, gmcproomdata.info.zone) 
+		else
+			mob = Stripname(mob)
+		end
+        elseif (GetPluginInfo(search_destroy_crowley_id, 17)) then
+                local gmcproomdata = gmcp("room")
+		if gmcproomdata ~= nil and gmcproomdata.info ~= nil then
+			_, mob = CallPlugin(search_destroy_crowley_id, "gmkw", mob, gmcproomdata.info.zone)
+		else
+			mob = Stripname(mob)
+		end
 	else
 		mob = Stripname(mob)
 	end
 
-	if nameCount > 1 then
-		mob = string.format("%s.%s", tostring(nameCount), mob)
-	end
-
-	return mob
+	return mob, nameCount
 end
 
 function Process_flags (flags)
@@ -342,6 +869,11 @@ function Process_flags (flags)
 end
 
 function Adapt_consider (name, line, wildcards)
+	if GetVariable("waiting_for_consider_start") == "true" then
+		SetVariable ("waiting_for_consider_start", "false")
+		targT = {}
+	end
+
 	local flags = nil
 	if SHOW_FLAGS then-- we want to be able to show the flags to the user - Shindo
 		flags = Process_flags(wildcards[1]) 
@@ -353,15 +885,24 @@ function Adapt_consider (name, line, wildcards)
 
 	-- Removed for loop here, no longer necessary with color, range set by triggers - Kobus
 	if mob then
+		local keyword, index
+		keyword, index = GetKeyword(mob)
 		local t = {
-			keyword = GetKeyword(mob),
+			keyword = keyword,
+			index   = index,
 			name    = mob,
 			mflags  = flags,
 			line    = line,
 			colour  = mob_color,
 			range   = "(".. mob_range.. ")",
-			message = line
+			message = line,
+			dead    = false,
+			attacked = false,
+			aimed   = false,
+			left    = false,
+			came    = false,
 		} -- Changed to use color, range set by triggers - Kobus
+		--Note("added ".. tostring(t.index).. ".".. tostring(t.keyword))
 		if ECHO_CONSIDER then
 			--ColourTell   --build the string in parts
 			ColourNote (mob_color, "", line.. " (".. mob_range.. ")" )
@@ -384,6 +925,10 @@ function Draw_Title ()
 	local entrycheck = {"@RE", "@GE"}
 	local killcheck = {"@RK", "@GK"}
 	local misccheck = {"@RM@W", "@GM@W"}
+	local skipevil = {"@GR@W", "@RR@W"}
+	local skipgood = {"@GG@W", "@RG@W"}
+	local skipneut = {"@GN@W", "@RN@W"}
+	local skipsanc = {"@GW@W", "@RW@W"}
 
 	--draw the title and add drag hotspot
 	local top     = BORDER_WIDTH + LINE_SPACING
@@ -393,9 +938,14 @@ function Draw_Title ()
 
 	movewindow.add_drag_handler (Win, 0, top, right, bottom, 1)
 	if (conw_on==1) then
-		consider_status = "@GON@W "..entrycheck[conw_entry+1]..killcheck[conw_kill+1]..misccheck[conw_misc+1] 
+		consider_status = "@GON@W "..entrycheck[conw_entry+1]..killcheck[conw_kill+1]..misccheck[conw_misc+1].." "
+				  ..skipevil[(conwall_options.skip_evil and 1 or 0)+1]
+				  ..skipgood[(conwall_options.skip_good and 1 or 0)+1]
+				  ..skipneut[(conwall_options.skip_neutral and 1 or 0)+1]
+				  ..skipsanc[(conwall_options.skip_sanctuary and 1 or 0)+1]
+				  .." "..string.format("%+d", conwall_options.min_level)..".."..string.format("%+d", conwall_options.max_level)
 	else 
-		consider_status = "@ROFF@W" 
+		consider_status = "@ROFF@W"
 	end
 	title_text = ColoursToStyles(string.format("@W%s (%s) - %s", TITLE, default_command, consider_status))
 	Theme.WindowTextFromStyles(Win, Font_id, title_text, left, top, right, bottom, utf8)
@@ -407,12 +957,52 @@ function Draw_Title ()
 
 end -- MakeTitle
 
-function Show_Window ()
+function Consider_end()
+	if GetVariable("waiting_for_consider_start") == "true" then
+		SetVariable ("waiting_for_consider_start", "false")
+		targT = {}
+	end
+	Show_Window()
+	SetVariable ("doing_consider", "false")
+	EnableTriggerGroup ("consider", false)
+end -- Consider_end
 
+function Update_Current_Target()
+	local target = gmcp("char.status.enemy")
+	if target == nil or target =="" then
+		return
+	end
+	target = Strip_colours(target:lower())
+
+	for i = #targT, 1, -1 do
+		targT[i].aimed = false
+	end
+	local found = false
+	for i = #targT, 1, -1 do
+		if not targT[i].dead and not targT[i].left and targT[i].attacked and targT[i].name:lower() == target then
+			targT[i].aimed = true
+			targT[i].pct = gmcp("char.status.enemypct")
+			found = true
+			break
+		end
+	end
+	if not found then
+		for i = #targT, 1, -1 do
+			if not targT[i].dead and not targT[i].left and targT[i].name:lower() == target then
+				targT[i].aimed = true
+				targT[i].pct = gmcp("char.status.enemypct")
+				break
+			end
+		end
+	end
+	Show_Window()
+end
+
+function Show_Window ()
 	-- get width and height and draw the window
 	if #targT > 0 then
 		for i,v in ipairs (targT) do
-			Window_width = math.max((WindowTextWidth (Win, Font_id, tostring(i).. ". ".. Strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), Banner_width, Window_width)
+			Window_width = math.max((WindowTextWidth (Win, Font_id, tostring(i).. ".   ".. Strip_colours(v.mflags).. " ".. v.name.. " ".. v.range) + TEXT_OFFSET * 2 + BORDER_WIDTH * 2), Banner_width, Window_width)
 		end
 	else
 		Window_width = Banner_width
@@ -435,11 +1025,23 @@ function Show_Window ()
 	local bottom  = top + Font_height
 
 	for i,v in ipairs (targT) do
-		local sLine = tostring(i).. ". ".. v.mflags.. " @W".. v.name.. " ".. colour_to_ansi[v.colour].. v.range
-		right   = WindowTextWidth (Win, Font_id, Strip_colours(sLine)) + left
-		Theme.WindowTextFromStyles(Win, Font_id, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
-		local sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. v.keyword.. "'"
-		WindowAddHotspot (Win, v.keyword.. ":".. tostring (i), left, top, right, bottom,
+		local fontid;
+		fontid = (v.dead or v.left) and FontStrikeout_id or ((v.aimed or not ShouldSkipMob(v, false)) and FontBold_id or Font_id)
+		local sAttacked = (v.aimed and not v.dead) and "@R\215@W " or (v.attacked and "@G\215@W " or "  ")
+		local sLine = tostring(i).. ". ".. sAttacked.. v.mflags.. " @W"
+		local name_left = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
+		sLine = sLine.. v.name.. " ".. colour_to_ansi[v.colour].. v.range
+		right   = WindowTextWidth (Win, fontid, Strip_colours(sLine)) + left
+		if v.pct ~= nil then
+			local pct = tonumber(v.pct)
+			if pct ~= nil then
+				local name_len = #Strip_colours(v.name)
+				Theme.DrawTextBox(Win, fontid, name_left, top, string.rep(" ", math.ceil((100-pct) * name_len / 100)), utf8, false, 121, 0)
+			end
+		end
+		Theme.WindowTextFromStyles(Win, fontid, ColoursToStyles(sLine), left, top, right, bottom, utf8) 
+		local sBalloon = v.line.. " ".. v.range.. "\n\n".. "Click to Execute: '".. default_command.. " ".. tostring(v.index).. ".".. v.keyword.. "'"
+		WindowAddHotspot (Win, v.index.. ".".. v.keyword.. ":".. tostring (i), left, top, right, bottom,
 		"", -- MouseOver
 		"", -- CancelMouseOver
 		"", -- MouseDown
@@ -456,9 +1058,6 @@ function Show_Window ()
 	Draw_Title()
 
 	WindowShow (Win, true)
-	SetVariable ("doing_consider", "false")
-	EnableTriggerGroup ("consider", false)
-
 end -- Show_Consider
 
 function Show_Banner ()
@@ -531,6 +1130,8 @@ function OnPluginInstall ()
 	end -- if
 
 	Font_id = "consider_font"
+	FontStrikeout_id = "consider_strikeout_font"
+	FontBold_id = "consider_bold_font"
 
 	Windowinfo = movewindow.install (Win, 6, miniwin.create_absolute_location)
 
@@ -547,24 +1148,35 @@ function OnPluginInstall ()
 	Ascent = WindowFontInfo (Win, Font_id, 2)
 	Descent = WindowFontInfo (Win, Font_id, 3)
 
+	WindowFont (Win, FontStrikeout_id, Font_name, Font_size, false, false, false, true, 0, 0)  -- strikeout
+	WindowFont (Win, FontBold_id, Font_name, Font_size, true, false, false, false, 0, 0)  -- bold
+
 	default_command = GetVariable ("default_command") or "kill"
 	keyword_position = GetVariable ("keyword_position") or "endw"
 
 	SetVariable ("doing_consider", "false")
+	SetVariable ("waiting_for_consider_start", "false")
 
 	conw_on = tonumber(GetVariable("conw_on")) or 1
 	conw_entry = tonumber(GetVariable("conw_entry")) or 1
 	conw_kill = tonumber(GetVariable("conw_kill")) or 1
 	conw_misc = tonumber(GetVariable("conw_misc")) or 1
+	conw_execute_mode = GetVariable("conw_execute_mode") ~= nil and GetVariable("conw_execute_mode") or "skill"
+	conw_ignore_area = GetVariable("conw_ignore_area") ~= nil and GetVariable("conw_ignore_area") or "bootcamp"
 
-	if conw_on == "1"then
+	EnableTriggerGroup ("auto_consider", conw_on)
+	if tonumber(conw_on) == 1 then
 		EnableTriggerGroup ("auto_consider_on_entry", conw_entry)
 		EnableTriggerGroup ("auto_consider_on_kill", conw_kill)
 		EnableTriggerGroup ("auto_consider_misc", conw_misc)
+		EnableTriggerGroup ("auto_track_kills", 1)
+		EnableTriggerGroup ("track_mob_moves", 1)
 	else
 		EnableTriggerGroup ("auto_consider_on_entry", 0)
 		EnableTriggerGroup ("auto_consider_on_kill", 0)
 		EnableTriggerGroup ("auto_consider_misc", 0)
+		EnableTriggerGroup ("auto_track_kills", 0)
+		EnableTriggerGroup ("track_mob_moves", 0)
 	end
 
 	if GetVariable ("enabled") == "false" then
@@ -574,32 +1186,37 @@ function OnPluginInstall ()
 	end -- they didn't enable us last time
 
 	OnPluginEnable ()
-
 end -- OnPluginInstall
 
 function OnPluginEnable ()
-
-	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - OFF")
+	Load_conwall_options()
+	Title_width = WindowTextWidth (Win, Font_id, TITLE.. " (".. default_command.. ")".. " - ON EKM RGNW -100..+100")
 	Banner_width = Title_width + BORDER_WIDTH * 2 + TEXT_OFFSET * 2
 	Show_Banner ()
-
 end -- OnPluginEnable
 
+function OnPluginConnect()
+	Load_conwall_options()
+	SetVariable("doing_consider", "false")
+	SetVariable("waiting_for_consider_start", "false")
+	SetVariable("doing_conwallslow", "false")
+end
+
 function OnPluginDisable ()
-
 	WindowShow (Win, false)
-
 end -- OnPluginDisable
 
 function OnPluginSaveState ()
-
 	SetVariable ("enabled", tostring (GetPluginInfo (GetPluginID (), 17)))
 	SetVariable ("doing_consider", "false")
+	SetVariable ("waiting_for_consider_start", "false")
 	SetVariable("conw_misc", conw_misc)
 	SetVariable("conw_kill", conw_kill)
 	SetVariable("conw_entry", conw_entry)
 	SetVariable("conw_on", conw_on)
+	SetVariable("conw_execute_mode", conw_execute_mode)
+	SetVariable("conw_ignore_area", conw_ignore_area)
 	movewindow.save_state (Win)
-
+	Save_conwall_options()
 end -- OnPluginSaveState
 
